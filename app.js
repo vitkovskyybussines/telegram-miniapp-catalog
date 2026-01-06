@@ -5,7 +5,6 @@ const categories = [
   'Вся продукція',
   'Сосиски та сардельки',
   'Варені ковбаси',
-  'Напівкопчені ковбаси',
   'Мʼясні делікатеси'
 ];
 
@@ -16,7 +15,8 @@ const products = [
     weight: '500г',
     category: 'Сосиски та сардельки',
     image: 'https://via.placeholder.com/300',
-    description: 'Соковиті сардельки з мʼяса'
+    description: 'Соковиті сардельки',
+    composition: 'Свинина'
   },
   {
     id: 2,
@@ -24,7 +24,8 @@ const products = [
     weight: '400г',
     category: 'Сосиски та сардельки',
     image: 'https://via.placeholder.com/300',
-    description: 'Ніжні сосиски з молоком'
+    description: 'Ніжні молочні сосиски',
+    composition: 'Свинина, молоко'
   },
   {
     id: 3,
@@ -32,7 +33,8 @@ const products = [
     weight: '700г',
     category: 'Варені ковбаси',
     image: 'https://via.placeholder.com/300',
-    description: 'Класична варена ковбаса'
+    description: 'Класична варена ковбаса',
+    composition: 'Свинина'
   },
   {
     id: 4,
@@ -40,7 +42,8 @@ const products = [
     weight: '100г',
     category: 'Мʼясні делікатеси',
     image: 'https://via.placeholder.com/300',
-    description: 'Ароматний мʼясний бекон'
+    description: 'Ароматний бекон',
+    composition: 'Свинина'
   }
 ];
 
@@ -98,7 +101,7 @@ function renderCatalog() {
         </div>
         <div class="controls">
           <button>-</button>
-          <input type="number" min="0" value="${qty}">
+          <input type="number" value="${qty}">
           <button>+</button>
         </div>
       </div>
@@ -112,7 +115,6 @@ function renderCatalog() {
     };
 
     const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
-
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
@@ -141,8 +143,8 @@ function renderProduct() {
     <div class="product">
       <img src="${p.image}" style="width:100%;border-radius:12px">
       <h3>${p.name}</h3>
-      <p>${p.weight}</p>
       <p>${p.description}</p>
+      <p><strong>Склад:</strong> ${p.composition}</p>
 
       <div class="controls">
         <button id="minus">-</button>
@@ -194,17 +196,17 @@ function renderCart() {
       <strong>${p.name}</strong><br>
       <small>${p.weight}</small>
 
-      <div class="controls">
-        <button>-</button>
-        <input type="number" value="${qty}">
-        <button>+</button>
+      <div class="cart-row">
+        <div class="controls">
+          <button>-</button>
+          <input type="number" value="${qty}">
+          <button>+</button>
+        </div>
+        <button class="remove-btn">Видалити позицію</button>
       </div>
-
-      <button class="remove-btn">Видалити позицію</button>
     `;
 
     const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
-
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
