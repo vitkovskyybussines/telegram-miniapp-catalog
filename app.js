@@ -13,6 +13,7 @@ fetch('./products.json')
     categories = data.categories;
     renderCategories();
     renderProducts();
+    renderCart();
   });
 
 function renderCategories() {
@@ -39,7 +40,7 @@ function renderProducts() {
   products
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .forEach(p => {
-      const qty = cart[p.id] || 0;
+      const qty = cart[p.id] || '';
 
       const el = document.createElement('div');
       el.className = 'product';
@@ -51,24 +52,37 @@ function renderProducts() {
           <div class="product-weight">${p.weight}</div>
           <div class="controls">
             <button>-</button>
-            <span>${qty}</span>
+            <input type="number" min="0" placeholder="0" value="${qty}">
             <button>+</button>
           </div>
         </div>
       `;
 
-      const [minus, , plus] = el.querySelectorAll('button, span, button');
+      const minus = el.querySelectorAll('button')[0];
+      const input = el.querySelector('input');
+      const plus = el.querySelectorAll('button')[1];
 
       minus.onclick = () => {
         if (!cart[p.id]) return;
         cart[p.id]--;
-        if (cart[p.id] === 0) delete cart[p.id];
+        if (cart[p.id] <= 0) delete cart[p.id];
         renderProducts();
         renderCart();
       };
 
       plus.onclick = () => {
         cart[p.id] = (cart[p.id] || 0) + 1;
+        renderProducts();
+        renderCart();
+      };
+
+      input.onchange = () => {
+        const value = Number(input.value);
+        if (!value || value <= 0) {
+          delete cart[p.id];
+        } else {
+          cart[p.id] = value;
+        }
         renderProducts();
         renderCart();
       };
@@ -109,9 +123,12 @@ document.getElementById('submit').onclick = () => {
     return;
   }
 
+  const comment = document.getElementById('comment').value.trim();
+
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items
+    items,
+    comment
   }));
 
   tg.close();
