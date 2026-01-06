@@ -9,9 +9,9 @@ let products = [];
 let categories = [];
 let activeCategory = 'all';
 
-let cart = {};                 // { productId: qty }
-let screen = 'catalog';        // catalog | product | cart
-let currentProductId = null;   // для екрану товару
+let cart = {};
+let screen = 'catalog';
+let currentProductId = null;
 
 const CART_KEY = 'cart';
 const COMMENT_KEY = 'comment';
@@ -26,6 +26,12 @@ fetch('./products.json')
     products = data.products;
     categories = data.categories;
     loadCart();
+
+    // 🔒 FIX: якщо кошик порожній — тільки каталог
+    if (Object.keys(cart).length === 0) {
+      screen = 'catalog';
+    }
+
     render();
   });
 
@@ -37,12 +43,6 @@ function loadCart() {
   try {
     const saved = localStorage.getItem(CART_KEY);
     if (saved) cart = JSON.parse(saved);
-
-    const savedComment = localStorage.getItem(COMMENT_KEY);
-    if (savedComment) {
-      const c = document.getElementById('comment');
-      if (c) c.value = savedComment;
-    }
   } catch {
     cart = {};
   }
@@ -50,8 +50,6 @@ function loadCart() {
 
 function saveCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  const c = document.getElementById('comment');
-  if (c) localStorage.setItem(COMMENT_KEY, c.value || '');
 }
 
 function clearCart() {
@@ -83,6 +81,11 @@ function updateQty(id, value) {
 ===================== */
 
 function render() {
+  // 🔒 FIX: ніколи не показуємо cart без товарів
+  if (screen === 'cart' && cartItemsCount() === 0) {
+    screen = 'catalog';
+  }
+
   document.getElementById('catalog-screen').style.display =
     screen === 'catalog' ? 'block' : 'none';
 
@@ -148,7 +151,6 @@ function renderProducts() {
         </div>
       `;
 
-      // відкриття екрану товару
       el.querySelectorAll('.clickable').forEach(elm => {
         elm.onclick = () => {
           currentProductId = p.id;
@@ -260,7 +262,14 @@ function renderCartScreen() {
 
   const items = Object.entries(cart);
   if (!items.length) {
-    list.innerText = 'Кошик порожній';
+    list.innerHTML = `
+      <p>🛒 Кошик порожній</p>
+      <button id="back-to-catalog">⬅️ Повернутись до каталогу</button>
+    `;
+    document.getElementById('back-to-catalog').onclick = () => {
+      screen = 'catalog';
+      render();
+    };
     return;
   }
 
@@ -307,24 +316,19 @@ document.getElementById('back').onclick = () => {
 };
 
 document.getElementById('submit').onclick = () => {
-  const entries = Object.entries(cart);
-  if (!entries.length) {
+  if (cartItemsCount() === 0) {
     alert('Кошик порожній');
     return;
   }
 
-  const payloadItems = entries.map(([id, qty]) => {
+  const items = Object.entries(cart).map(([id, qty]) => {
     const p = products.find(x => x.id == id);
-    return {
-      name: p.name,
-      weight: p.weight,
-      qty
-    };
+    return { name: p.name, weight: p.weight, qty };
   });
 
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items: payloadItems,
+    items,
     comment: document.getElementById('comment').value.trim()
   }));
 
