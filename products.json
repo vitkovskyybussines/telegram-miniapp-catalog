@@ -1,20 +1,27 @@
-[
-  {
-    "id": 1,
-    "category": "sausages",
-    "name": "Баварські сардельки",
-    "weight": "500г"
-  },
-  {
-    "id": 2,
-    "category": "sausages",
-    "name": "Сосиски молочні",
-    "weight": "400г"
-  },
-  {
-    "id": 3,
-    "category": "delicacies",
-    "name": "Бекон",
-    "weight": "100г"
-  }
-]
+{
+  "categories": [
+    { "id": "all", "name": "Вся продукція" },
+    { "id": "boiled", "name": "Варені ковбаси" },
+    { "id": "sausages", "name": "Сосиски та сардельки" },
+    { "id": "smoked", "name": "Напівкопчені ковбаси" },
+    { "id": "delicacies", "name": "Мʼясні делікатеси" }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "category": "sausages",
+      "name": "Баварські сардельки",
+      "weight": "500г",
+      "price": 27552,
+      "image": "images/bavarian.jpg"
+    },
+    {
+      "id": 2,
+      "category": "delicacies",
+      "name": "Бекон",
+      "weight": "100г",
+      "price": 17584,
+      "image": "images/bacon.jpg"
+    }
+  ]
+}
