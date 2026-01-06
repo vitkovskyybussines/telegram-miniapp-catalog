@@ -5,7 +5,6 @@ let category = 'Вся продукція';
 let selectedProduct = null;
 
 let cart = {};
-let comment = '';
 
 const categories = [
   'Вся продукція',
@@ -16,15 +15,42 @@ const categories = [
 ];
 
 const products = [
-  { id: 1, name: 'Баварські сардельки', weight: '500г', category: 'Сосиски та сардельки', image: 'https://via.placeholder.com/400x300', description: 'Соковиті сардельки', composition: 'Свинина, спеції' },
-  { id: 2, name: 'Сосиски молочні', weight: '400г', category: 'Сосиски та сардельки', image: 'https://via.placeholder.com/400x300', description: 'Ніжні сосиски', composition: 'Мʼясо, молоко' },
-
-  { id: 3, name: 'Докторська', weight: '700г', category: 'Варені ковбаси', image: 'https://via.placeholder.com/400x300', description: 'Класична ковбаса', composition: 'Свинина, яловичина' },
-  { id: 4, name: 'Молочна ковбаса', weight: '600г', category: 'Варені ковбаси', image: 'https://via.placeholder.com/400x300', description: 'Мʼякий смак', composition: 'Мʼясо, молоко' },
-
-  { id: 5, name: 'Краківська', weight: '600г', category: 'Напівкопчені ковбаси', image: 'https://via.placeholder.com/400x300', description: 'Ароматна', composition: 'Спеції, мʼясо' },
-
-  { id: 6, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси', image: 'https://via.placeholder.com/400x300', description: 'Копчений бекон', composition: 'Свинина' }
+  {
+    id: 1,
+    name: 'Сосиски молочні',
+    weight: '400г',
+    category: 'Сосиски та сардельки',
+    image: 'https://via.placeholder.com/300x200',
+    description: 'Ніжні сосиски',
+    composition: 'Мʼясо, молоко'
+  },
+  {
+    id: 2,
+    name: 'Баварські сардельки',
+    weight: '500г',
+    category: 'Сосиски та сардельки',
+    image: 'https://via.placeholder.com/300x200',
+    description: 'Соковиті',
+    composition: 'Свинина, спеції'
+  },
+  {
+    id: 3,
+    name: 'Докторська',
+    weight: '700г',
+    category: 'Варені ковбаси',
+    image: 'https://via.placeholder.com/300x200',
+    description: 'Класика',
+    composition: 'Свинина, яловичина'
+  },
+  {
+    id: 4,
+    name: 'Бекон',
+    weight: '100г',
+    category: 'Мʼясні делікатеси',
+    image: 'https://via.placeholder.com/300x200',
+    description: 'Копчений бекон',
+    composition: 'Свинина'
+  }
 ];
 
 function render() {
@@ -60,14 +86,14 @@ function render() {
         const row = document.createElement('div');
         row.className = 'product';
 
+        const img = document.createElement('img');
+        img.src = p.image;
+        img.onclick = () => openProduct(p);
+
         const info = document.createElement('div');
         info.className = 'product-info';
         info.innerHTML = `<strong>${p.name}</strong>${p.weight}`;
-        info.onclick = () => {
-          selectedProduct = p;
-          screen = 'product';
-          render();
-        };
+        info.onclick = () => openProduct(p);
 
         const controls = document.createElement('div');
         controls.className = 'controls';
@@ -93,7 +119,7 @@ function render() {
         };
 
         controls.append(minus, count, plus);
-        row.append(info, controls);
+        row.append(img, info, controls);
         content.appendChild(row);
       });
 
@@ -114,13 +140,21 @@ function render() {
 
     content.innerHTML = `
       <div class="screen">
-        <img class="product-img" src="${p.image}">
+        <img class="product-img-large" src="${p.image}">
         <p><strong>${p.weight}</strong></p>
         <p>${p.description}</p>
         <p><small>${p.composition}</small></p>
 
-        <div class="action primary" onclick="addProduct(${p.id})">
-          Додати в кошик
+        <div class="add-row">
+          <div class="controls">
+            <button class="btn" onclick="changeQty(${p.id}, -1)">−</button>
+            <div class="count">${cart[p.id] || 0}</div>
+            <button class="btn" onclick="changeQty(${p.id}, 1)">+</button>
+          </div>
+
+          <button class="add-btn" onclick="addFromProduct(${p.id})">
+            Додати в кошик
+          </button>
         </div>
 
         <div class="action secondary" onclick="backToCatalog()">
@@ -129,81 +163,26 @@ function render() {
       </div>
     `;
   }
-
-  if (screen === 'cart') {
-    title.textContent = 'Кошик';
-
-    Object.entries(cart).forEach(([id, qty]) => {
-      if (qty === 0) return;
-      const p = products.find(x => x.id == id);
-
-      const row = document.createElement('div');
-      row.className = 'cart-item';
-      row.innerHTML = `
-        <div>
-          <strong>${p.name}</strong><br>${p.weight}
-        </div>
-        <button class="delete" onclick="removeItem(${id})">
-          Видалити позицію
-        </button>
-      `;
-      content.appendChild(row);
-    });
-
-    const ta = document.createElement('textarea');
-    ta.placeholder = 'Коментар до замовлення (необовʼязково)';
-    ta.value = comment;
-    ta.oninput = e => comment = e.target.value;
-    content.appendChild(ta);
-
-    const send = document.createElement('div');
-    send.className = 'action primary';
-    send.textContent = 'Оформити замовлення';
-    send.onclick = sendOrder;
-
-    const back = document.createElement('div');
-    back.className = 'action secondary';
-    back.textContent = 'Повернутись до каталогу';
-    back.onclick = () => {
-      screen = 'catalog';
-      render();
-    };
-
-    content.append(send, back);
-  }
 }
 
-function addProduct(id) {
+function openProduct(p) {
+  selectedProduct = p;
+  screen = 'product';
+  render();
+}
+
+function changeQty(id, delta) {
+  cart[id] = Math.max(0, (cart[id] || 0) + delta);
+  render();
+}
+
+function addFromProduct(id) {
   cart[id] = (cart[id] || 0) + 1;
   screen = 'catalog';
   render();
 }
 
 function backToCatalog() {
-  screen = 'catalog';
-  render();
-}
-
-function removeItem(id) {
-  delete cart[id];
-  render();
-}
-
-function sendOrder() {
-  const items = Object.entries(cart)
-    .filter(([, q]) => q > 0)
-    .map(([id, q]) => {
-      const p = products.find(x => x.id == id);
-      return `${p.name} (${p.weight}) × ${q}`;
-    });
-
-  tg.sendData(JSON.stringify({
-    items,
-    comment
-  }));
-
-  cart = {};
-  comment = '';
   screen = 'catalog';
   render();
 }
