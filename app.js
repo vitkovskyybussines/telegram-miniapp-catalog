@@ -10,9 +10,24 @@ const categories = [
 ];
 
 const products = [
+  // Сосиски та сардельки
   { id: 1, name: 'Баварські сардельки', weight: '500г', category: 'Сосиски та сардельки' },
   { id: 2, name: 'Сосиски молочні', weight: '400г', category: 'Сосиски та сардельки' },
-  { id: 3, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси' }
+  { id: 3, name: 'Сосиски класичні', weight: '450г', category: 'Сосиски та сардельки' },
+
+  // Варені ковбаси
+  { id: 4, name: 'Докторська', weight: '700г', category: 'Варені ковбаси' },
+  { id: 5, name: 'Молочна ковбаса', weight: '600г', category: 'Варені ковбаси' },
+  { id: 6, name: 'Дитяча ковбаса', weight: '500г', category: 'Варені ковбаси' },
+
+  // Напівкопчені ковбаси
+  { id: 7, name: 'Краківська', weight: '600г', category: 'Напівкопчені ковбаси' },
+  { id: 8, name: 'Мисливська', weight: '500г', category: 'Напівкопчені ковбаси' },
+
+  // Мʼясні делікатеси
+  { id: 9, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси' },
+  { id: 10, name: 'Шинка', weight: '150г', category: 'Мʼясні делікатеси' },
+  { id: 11, name: 'Буженина', weight: '200г', category: 'Мʼясні делікатеси' }
 ];
 
 let cart = {};
@@ -90,15 +105,17 @@ function renderCart() {
     const row = document.createElement('div');
     row.className = 'cart-item';
     row.innerHTML = `
-      <div>
-        <strong>${p.name}</strong><br>
-        <small>${p.weight}</small>
-        <div class="controls">
-          <button>-</button>
-          <input type="number" min="1" value="${qty}">
-          <button>+</button>
-          <button class="remove-btn">Видалити позицію</button>
+      <div class="cart-row">
+        <div>
+          <strong>${p.name}</strong><br>
+          <small>${p.weight}</small>
+          <div class="controls">
+            <button>-</button>
+            <input type="number" min="1" value="${qty}">
+            <button>+</button>
+          </div>
         </div>
+        <button class="remove-btn">Видалити позицію</button>
       </div>
     `;
 
@@ -168,10 +185,9 @@ function submitOrder() {
     };
   });
 
-  tg.sendData(JSON.stringify({
-    items,
-    comment
-  }));
+  tg.sendData(JSON.stringify({ items, comment }));
+  cart = {};
+  tg.close();
 }
 
 render();
