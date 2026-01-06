@@ -3,6 +3,7 @@ const tg = window.Telegram.WebApp;
 let screen = 'catalog';
 let category = 'Вся продукція';
 let selectedProduct = null;
+let comment = '';
 
 let cart = {};
 
@@ -20,8 +21,8 @@ const products = [
     name: 'Сосиски молочні',
     weight: '400г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/300x200',
-    description: 'Ніжні сосиски',
+    image: 'https://via.placeholder.com/300x200?text=Сосиски',
+    description: 'Ніжні молочні сосиски',
     composition: 'Мʼясо, молоко'
   },
   {
@@ -29,17 +30,17 @@ const products = [
     name: 'Баварські сардельки',
     weight: '500г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/300x200',
-    description: 'Соковиті',
+    image: 'https://via.placeholder.com/300x200?text=Сардельки',
+    description: 'Соковиті баварські сардельки',
     composition: 'Свинина, спеції'
   },
   {
     id: 3,
-    name: 'Докторська',
+    name: 'Докторська ковбаса',
     weight: '700г',
     category: 'Варені ковбаси',
-    image: 'https://via.placeholder.com/300x200',
-    description: 'Класика',
+    image: 'https://via.placeholder.com/300x200?text=Докторська',
+    description: 'Класична докторська ковбаса',
     composition: 'Свинина, яловичина'
   },
   {
@@ -47,7 +48,7 @@ const products = [
     name: 'Бекон',
     weight: '100г',
     category: 'Мʼясні делікатеси',
-    image: 'https://via.placeholder.com/300x200',
+    image: 'https://via.placeholder.com/300x200?text=Бекон',
     description: 'Копчений бекон',
     composition: 'Свинина'
   }
@@ -92,7 +93,7 @@ function render() {
 
         const info = document.createElement('div');
         info.className = 'product-info';
-        info.innerHTML = `<strong>${p.name}</strong>${p.weight}`;
+        info.innerHTML = `<strong>${p.name}</strong><br>${p.weight}`;
         info.onclick = () => openProduct(p);
 
         const controls = document.createElement('div');
@@ -163,6 +164,40 @@ function render() {
       </div>
     `;
   }
+
+  if (screen === 'cart') {
+    title.textContent = 'Кошик';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'screen';
+
+    Object.keys(cart).forEach(id => {
+      if (cart[id] === 0) return;
+      const p = products.find(x => x.id == id);
+
+      const row = document.createElement('div');
+      row.className = 'product';
+      row.innerHTML = `
+        <div class="product-info">
+          <strong>${p.name}</strong><br>${p.weight}
+        </div>
+        <div class="controls">
+          <button class="btn" onclick="changeQty(${p.id}, -1)">−</button>
+          <div class="count">${cart[p.id]}</div>
+          <button class="btn" onclick="changeQty(${p.id}, 1)">+</button>
+        </div>
+      `;
+      wrap.appendChild(row);
+    });
+
+    wrap.innerHTML += `
+      <textarea placeholder="Коментар до замовлення" oninput="comment=this.value">${comment}</textarea>
+      <div class="action add-btn" onclick="submitOrder()">Оформити замовлення</div>
+      <div class="action secondary" onclick="backToCatalog()">Повернутись до каталогу</div>
+    `;
+
+    content.appendChild(wrap);
+  }
 }
 
 function openProduct(p) {
@@ -183,6 +218,14 @@ function addFromProduct(id) {
 }
 
 function backToCatalog() {
+  screen = 'catalog';
+  render();
+}
+
+function submitOrder() {
+  tg.sendData(JSON.stringify({ cart, comment }));
+  cart = {};
+  comment = '';
   screen = 'catalog';
   render();
 }
