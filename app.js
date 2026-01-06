@@ -15,32 +15,32 @@ const products = [
     name: 'Баварські сардельки',
     weight: '500г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/600x400?text=Баварські+сардельки',
-    description: 'Соковиті сардельки з ніжним смаком.'
+    image: 'https://via.placeholder.com/300',
+    description: 'Соковиті сардельки з мʼяса'
   },
   {
     id: 2,
     name: 'Сосиски молочні',
     weight: '400г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/600x400?text=Сосиски+молочні',
-    description: 'Класичні молочні сосиски.'
+    image: 'https://via.placeholder.com/300',
+    description: 'Ніжні сосиски з молоком'
   },
   {
     id: 3,
     name: 'Докторська',
     weight: '700г',
     category: 'Варені ковбаси',
-    image: 'https://via.placeholder.com/600x400?text=Докторська',
-    description: 'Традиційна варена ковбаса.'
+    image: 'https://via.placeholder.com/300',
+    description: 'Класична варена ковбаса'
   },
   {
     id: 4,
     name: 'Бекон',
     weight: '100г',
     category: 'Мʼясні делікатеси',
-    image: 'https://via.placeholder.com/600x400?text=Бекон',
-    description: 'Ароматний мʼясний бекон.'
+    image: 'https://via.placeholder.com/300',
+    description: 'Ароматний мʼясний бекон'
   }
 ];
 
@@ -52,12 +52,11 @@ let comment = '';
 
 const categoriesEl = document.getElementById('categories');
 const contentEl = document.getElementById('content');
-const footerEl = document.getElementById('footer');
 const titleEl = document.getElementById('title');
 
 function render() {
   categoriesEl.style.display = screen === 'catalog' ? 'flex' : 'none';
-  footerEl.classList.remove('show');
+  contentEl.className = 'fade';
 
   if (screen === 'catalog') renderCatalog();
   if (screen === 'product') renderProduct();
@@ -89,20 +88,23 @@ function renderCatalog() {
 
     const row = document.createElement('div');
     row.className = 'product';
+
     row.innerHTML = `
-      <img src="${p.image}">
-      <div class="product-info">
-        <strong>${p.name}</strong><br>
-        <small>${p.weight}</small>
-      </div>
-      <div class="controls">
-        <button>-</button>
-        <input type="number" min="0" value="${qty}">
-        <button>+</button>
+      <div class="product-row">
+        <img src="${p.image}" class="thumb">
+        <div class="product-info">
+          <strong>${p.name}</strong><br>
+          <small>${p.weight}</small>
+        </div>
+        <div class="controls">
+          <button>-</button>
+          <input type="number" min="0" value="${qty}">
+          <button>+</button>
+        </div>
       </div>
     `;
 
-    row.querySelector('img').onclick =
+    row.querySelector('.thumb').onclick =
     row.querySelector('.product-info').onclick = () => {
       currentProduct = p;
       screen = 'product';
@@ -110,6 +112,7 @@ function renderCatalog() {
     };
 
     const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
+
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
@@ -117,57 +120,63 @@ function renderCatalog() {
     contentEl.appendChild(row);
   });
 
-  updateFooter();
+  if (Object.keys(cart).length > 0) {
+    const btn = document.createElement('div');
+    btn.className = 'button';
+    btn.textContent = `Перейти до замовлення — ${Object.keys(cart).length} позицій`;
+    btn.onclick = () => {
+      screen = 'cart';
+      render();
+    };
+    contentEl.appendChild(btn);
+  }
 }
 
 function renderProduct() {
-  titleEl.textContent = currentProduct.name;
+  const p = currentProduct;
+  let qty = cart[p.id] || 0;
+
+  titleEl.textContent = p.name;
   contentEl.innerHTML = `
-    <div class="product-page">
-      <img src="${currentProduct.image}">
-      <div style="padding:16px">
-        <h2>${currentProduct.name}</h2>
-        <p><strong>${currentProduct.weight}</strong></p>
-        <p>${currentProduct.description}</p>
+    <div class="product">
+      <img src="${p.image}" style="width:100%;border-radius:12px">
+      <h3>${p.name}</h3>
+      <p>${p.weight}</p>
+      <p>${p.description}</p>
+
+      <div class="controls">
+        <button id="minus">-</button>
+        <input id="qty" type="number" value="${qty}">
+        <button id="plus">+</button>
       </div>
+
+      <div class="button" id="add">Додати в кошик</div>
+      <div class="button back" id="back">Повернутись до каталогу</div>
     </div>
   `;
 
-  const qty = cart[currentProduct.id] || 0;
+  const qtyInput = document.getElementById('qty');
 
-  const controls = document.createElement('div');
-  controls.className = 'controls';
-  controls.style.justifyContent = 'center';
-  controls.innerHTML = `
-    <button>-</button>
-    <input type="number" min="0" value="${qty}">
-    <button>+</button>
-  `;
+  document.getElementById('minus').onclick = () => {
+    qty = Math.max(0, qty - 1);
+    qtyInput.value = qty;
+  };
 
-  const [minus, input, plus] = controls.querySelectorAll('button, input');
-  minus.onclick = () => updateQty(currentProduct.id, qty - 1);
-  plus.onclick = () => updateQty(currentProduct.id, qty + 1);
-  input.onchange = e => updateQty(currentProduct.id, Number(e.target.value));
+  document.getElementById('plus').onclick = () => {
+    qty++;
+    qtyInput.value = qty;
+  };
 
-  contentEl.appendChild(controls);
-
-  const addBtn = document.createElement('div');
-  addBtn.className = 'button';
-  addBtn.textContent = 'Додати в кошик';
-  addBtn.onclick = () => {
+  document.getElementById('add').onclick = () => {
+    if (qty > 0) cart[p.id] = qty;
     screen = 'catalog';
     render();
   };
-  contentEl.appendChild(addBtn);
 
-  const back = document.createElement('div');
-  back.className = 'button back';
-  back.textContent = 'Повернутись до каталогу';
-  back.onclick = () => {
+  document.getElementById('back').onclick = () => {
     screen = 'catalog';
     render();
   };
-  contentEl.appendChild(back);
 }
 
 function renderCart() {
@@ -179,23 +188,30 @@ function renderCart() {
     const qty = cart[id];
 
     const row = document.createElement('div');
-    row.className = 'product';
+    row.className = 'cart-item';
+
     row.innerHTML = `
-      <div>
-        <strong>${p.name}</strong><br>
-        <small>${p.weight}</small>
-      </div>
+      <strong>${p.name}</strong><br>
+      <small>${p.weight}</small>
+
       <div class="controls">
         <button>-</button>
-        <input type="number" min="1" value="${qty}">
+        <input type="number" value="${qty}">
         <button>+</button>
       </div>
+
+      <button class="remove-btn">Видалити позицію</button>
     `;
 
-    const [minus, input, plus] = row.querySelectorAll('button, input');
+    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
+
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
+    row.querySelector('.remove-btn').onclick = () => {
+      delete cart[id];
+      render();
+    };
 
     contentEl.appendChild(row);
   });
@@ -228,24 +244,16 @@ function updateQty(id, qty) {
   render();
 }
 
-function updateFooter() {
-  const count = Object.keys(cart).length;
-  if (count === 0) return;
-
-  footerEl.textContent = `Перейти до замовлення — ${count} позицій`;
-  footerEl.classList.add('show');
-  footerEl.onclick = () => {
-    screen = 'cart';
-    render();
-  };
-}
-
 function submitOrder() {
   if (!confirm('Підтвердити замовлення?')) return;
 
   const items = Object.keys(cart).map(id => {
     const p = products.find(x => x.id == id);
-    return { name: p.name, qty: cart[id], weight: p.weight };
+    return {
+      name: p.name,
+      weight: p.weight,
+      qty: cart[id]
+    };
   });
 
   tg.sendData(JSON.stringify({ items, comment }));
