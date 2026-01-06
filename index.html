@@ -1,62 +1,14 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
   <title>Каталог</title>
-
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 12px;
-      background: #f5f5f5;
-    }
-    h1 {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    .item {
-      background: #fff;
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .item input {
-      width: 70px;
-      padding: 4px;
-    }
-    textarea {
-      width: 100%;
-      margin-top: 10px;
-      padding: 6px;
-    }
-    button {
-      width: 100%;
-      margin-top: 12px;
-      padding: 12px;
-      font-size: 16px;
-      background: #2ea6ff;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-    }
-  </style>
 </head>
-
 <body>
-  <h1>🛒 Каталог (кг)</h1>
-
-  <div id="catalog"></div>
-
-  <textarea id="comment" rows="3" placeholder="Коментар до заявки (необовʼязково)"></textarea>
-
-  <button onclick="submitOrder()">📤 Надіслати заявку</button>
+  <h3>Каталог</h3>
+  <div id="products"></div>
+  <button id="submit">Оформити замовлення</button>
 
   <script src="app.js"></script>
 </body>
