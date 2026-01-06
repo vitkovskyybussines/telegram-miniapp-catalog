@@ -9,10 +9,12 @@ let products = [];
 let categories = [];
 let activeCategory = 'all';
 
-let cart = {};
-let screen = 'catalog';
+let cart = {};                 // { productId: qty }
+let screen = 'catalog';        // catalog | product | cart
+let currentProductId = null;   // для екрану товару
 
 const CART_KEY = 'cart';
+const COMMENT_KEY = 'comment';
 
 /* =====================
    INIT
@@ -35,6 +37,12 @@ function loadCart() {
   try {
     const saved = localStorage.getItem(CART_KEY);
     if (saved) cart = JSON.parse(saved);
+
+    const savedComment = localStorage.getItem(COMMENT_KEY);
+    if (savedComment) {
+      const c = document.getElementById('comment');
+      if (c) c.value = savedComment;
+    }
   } catch {
     cart = {};
   }
@@ -42,11 +50,14 @@ function loadCart() {
 
 function saveCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  const c = document.getElementById('comment');
+  if (c) localStorage.setItem(COMMENT_KEY, c.value || '');
 }
 
 function clearCart() {
   cart = {};
   localStorage.removeItem(CART_KEY);
+  localStorage.removeItem(COMMENT_KEY);
 }
 
 /* =====================
@@ -55,17 +66,6 @@ function clearCart() {
 
 function cartItemsCount() {
   return Object.keys(cart).length;
-}
-
-function cartTotal() {
-  return Object.entries(cart).reduce((sum, [id, qty]) => {
-    const p = products.find(x => x.id == id);
-    return sum + p.price * qty;
-  }, 0);
-}
-
-function formatPrice(v) {
-  return v.toLocaleString('uk-UA') + ' UZS';
 }
 
 function updateQty(id, value) {
@@ -79,17 +79,22 @@ function updateQty(id, value) {
 }
 
 /* =====================
-   RENDER
+   ROOT RENDER
 ===================== */
 
 function render() {
   document.getElementById('catalog-screen').style.display =
     screen === 'catalog' ? 'block' : 'none';
+
+  document.getElementById('product-screen').style.display =
+    screen === 'product' ? 'block' : 'none';
+
   document.getElementById('cart-screen').style.display =
     screen === 'cart' ? 'block' : 'none';
 
   renderCategories();
   renderProducts();
+  renderProductScreen();
   renderBottomButton();
   renderCartScreen();
 }
@@ -131,28 +136,96 @@ function renderProducts() {
       el.className = 'product';
 
       el.innerHTML = `
-        <img src="${p.image}" />
-        <div class="product-info">
+        <img src="${p.image}" class="clickable" />
+        <div class="product-info clickable">
           <div class="product-name">${p.name}</div>
           <div class="product-weight">${p.weight}</div>
-          <div class="product-price">${formatPrice(p.price)}</div>
-          <div class="controls">
-            <button>-</button>
-            <input type="number" min="0" value="${qty}">
-            <button>+</button>
-          </div>
+        </div>
+        <div class="controls">
+          <button>-</button>
+          <input type="number" min="0" value="${qty}" placeholder="0">
+          <button>+</button>
         </div>
       `;
 
-      const [minus, plus] = el.querySelectorAll('button');
-      const input = el.querySelector('input');
+      // відкриття екрану товару
+      el.querySelectorAll('.clickable').forEach(elm => {
+        elm.onclick = () => {
+          currentProductId = p.id;
+          screen = 'product';
+          render();
+        };
+      });
 
-      minus.onclick = () => updateQty(p.id, (cart[p.id] || 0) - 1);
-      plus.onclick = () => updateQty(p.id, (cart[p.id] || 0) + 1);
-      input.onchange = () => updateQty(p.id, Number(input.value));
+      const minus = el.querySelectorAll('button')[0];
+      const input = el.querySelector('input');
+      const plus = el.querySelectorAll('button')[1];
+
+      minus.onclick = e => {
+        e.stopPropagation();
+        updateQty(p.id, (cart[p.id] || 0) - 1);
+      };
+
+      plus.onclick = e => {
+        e.stopPropagation();
+        updateQty(p.id, (cart[p.id] || 0) + 1);
+      };
+
+      input.onchange = e => {
+        e.stopPropagation();
+        updateQty(p.id, Number(input.value));
+      };
 
       root.appendChild(el);
     });
+}
+
+/* =====================
+   PRODUCT SCREEN
+===================== */
+
+function renderProductScreen() {
+  if (screen !== 'product') return;
+
+  const p = products.find(x => x.id == currentProductId);
+  if (!p) return;
+
+  const qty = cart[p.id] || 0;
+
+  document.getElementById('product-content').innerHTML = `
+    <img src="${p.image}" class="product-image" />
+    <h3>${p.name}</h3>
+    <div>${p.weight}</div>
+    <p>${p.description || ''}</p>
+
+    ${p.features ? `
+      <ul>
+        ${p.features.map(f => `<li>${f}</li>`).join('')}
+      </ul>
+    ` : ''}
+
+    <div class="controls">
+      <button id="prod-minus">-</button>
+      <input id="prod-input" type="number" min="0" value="${qty}">
+      <button id="prod-plus">+</button>
+    </div>
+
+    <button id="back-product">⬅️ Назад</button>
+  `;
+
+  document.getElementById('prod-minus').onclick =
+    () => updateQty(p.id, qty - 1);
+
+  document.getElementById('prod-plus').onclick =
+    () => updateQty(p.id, qty + 1);
+
+  document.getElementById('prod-input').onchange =
+    e => updateQty(p.id, Number(e.target.value));
+
+  document.getElementById('back-product').onclick = () => {
+    screen = 'catalog';
+    render();
+  };
 }
 
 /* =====================
@@ -165,7 +238,7 @@ function renderBottomButton() {
 
   if (screen === 'catalog' && count > 0) {
     btn.style.display = 'block';
-    btn.innerText = `Перейти до замовлення — ${count} позицій • ${formatPrice(cartTotal())}`;
+    btn.innerText = `Перейти до замовлення — ${count} позицій`;
     btn.onclick = () => {
       screen = 'cart';
       render();
@@ -185,15 +258,20 @@ function renderCartScreen() {
   const list = document.getElementById('cart-items');
   list.innerHTML = '';
 
-  Object.entries(cart).forEach(([id, qty]) => {
+  const items = Object.entries(cart);
+  if (!items.length) {
+    list.innerText = 'Кошик порожній';
+    return;
+  }
+
+  items.forEach(([id, qty]) => {
     const p = products.find(x => x.id == id);
 
     const row = document.createElement('div');
     row.className = 'cart-row';
 
     row.innerHTML = `
-      <b>${p.name}</b> (${p.weight})<br>
-      ${formatPrice(p.price)} × ${qty} = <b>${formatPrice(p.price * qty)}</b>
+      <div class="cart-title">${p.name} (${p.weight})</div>
       <div class="controls">
         <button>-</button>
         <input type="number" min="0" value="${qty}">
@@ -202,23 +280,21 @@ function renderCartScreen() {
       </div>
     `;
 
-    const [minus, plus, remove] = row.querySelectorAll('button');
+    const buttons = row.querySelectorAll('button');
     const input = row.querySelector('input');
 
-    minus.onclick = () => updateQty(id, qty - 1);
-    plus.onclick = () => updateQty(id, qty + 1);
-    remove.onclick = () => {
+    buttons[0].onclick = () => updateQty(id, qty - 1);
+    buttons[1].onclick = () => updateQty(id, qty + 1);
+    buttons[2].onclick = () => {
       delete cart[id];
       saveCart();
       render();
     };
-    input.onchange = () => updateQty(id, Number(input.value));
+
+    input.onchange = e => updateQty(id, Number(e.target.value));
 
     list.appendChild(row);
   });
-
-  document.getElementById('cart-total').innerText =
-    'Разом: ' + formatPrice(cartTotal());
 }
 
 /* =====================
@@ -231,19 +307,25 @@ document.getElementById('back').onclick = () => {
 };
 
 document.getElementById('submit').onclick = () => {
-  const items = Object.entries(cart).map(([id, qty]) => {
+  const entries = Object.entries(cart);
+  if (!entries.length) {
+    alert('Кошик порожній');
+    return;
+  }
+
+  const payloadItems = entries.map(([id, qty]) => {
     const p = products.find(x => x.id == id);
     return {
       name: p.name,
-      qty,
-      price: p.price
+      weight: p.weight,
+      qty
     };
   });
 
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items,
-    total: cartTotal()
+    items: payloadItems,
+    comment: document.getElementById('comment').value.trim()
   }));
 
   clearCart();
