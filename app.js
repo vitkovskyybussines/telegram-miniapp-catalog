@@ -1,36 +1,117 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-let cart = [];
+let products = [];
+let categories = [];
+let activeCategory = 'all';
+const cart = {};
 
 fetch('./products.json')
   .then(r => r.json())
-  .then(products => {
-    const container = document.getElementById('products');
-
-    products.forEach(p => {
-      const btn = document.createElement('button');
-      btn.innerText = `${p.name} (${p.weight})`;
-      btn.onclick = () => {
-        cart.push(p);
-        alert(`${p.name} додано`);
-      };
-      container.appendChild(btn);
-    });
+  .then(data => {
+    products = data.products;
+    categories = data.categories;
+    renderCategories();
+    renderProducts();
   });
 
+function renderCategories() {
+  const root = document.getElementById('categories');
+  root.innerHTML = '';
+
+  categories.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'category' + (c.id === activeCategory ? ' active' : '');
+    el.innerText = c.name;
+    el.onclick = () => {
+      activeCategory = c.id;
+      renderCategories();
+      renderProducts();
+    };
+    root.appendChild(el);
+  });
+}
+
+function renderProducts() {
+  const root = document.getElementById('products');
+  root.innerHTML = '';
+
+  products
+    .filter(p => activeCategory === 'all' || p.category === activeCategory)
+    .forEach(p => {
+      const qty = cart[p.id] || 0;
+
+      const el = document.createElement('div');
+      el.className = 'product';
+
+      el.innerHTML = `
+        <img src="${p.image}" />
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-weight">${p.weight}</div>
+          <div class="controls">
+            <button>-</button>
+            <span>${qty}</span>
+            <button>+</button>
+          </div>
+        </div>
+      `;
+
+      const [minus, , plus] = el.querySelectorAll('button, span, button');
+
+      minus.onclick = () => {
+        if (!cart[p.id]) return;
+        cart[p.id]--;
+        if (cart[p.id] === 0) delete cart[p.id];
+        renderProducts();
+        renderCart();
+      };
+
+      plus.onclick = () => {
+        cart[p.id] = (cart[p.id] || 0) + 1;
+        renderProducts();
+        renderCart();
+      };
+
+      root.appendChild(el);
+    });
+}
+
+function renderCart() {
+  const root = document.getElementById('cart-items');
+  const items = Object.entries(cart);
+
+  if (!items.length) {
+    root.innerText = 'Кошик порожній';
+    return;
+  }
+
+  root.innerHTML = items
+    .map(([id, qty]) => {
+      const p = products.find(x => x.id == id);
+      return `• ${p.name} (${p.weight}) × ${qty}`;
+    })
+    .join('<br>');
+}
+
 document.getElementById('submit').onclick = () => {
-  if (!cart.length) {
+  const items = Object.entries(cart).map(([id, qty]) => {
+    const p = products.find(x => x.id == id);
+    return {
+      name: p.name,
+      weight: p.weight,
+      qty
+    };
+  });
+
+  if (!items.length) {
     alert('Кошик порожній');
     return;
   }
 
   tg.sendData(JSON.stringify({
-    items: cart.map(i => ({
-      name: i.name,
-      weight: i.weight,
-      qty: 1
-    }))
+    initData: tg.initData,
+    items
   }));
 
   tg.close();
