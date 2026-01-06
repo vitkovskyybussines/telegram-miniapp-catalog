@@ -10,29 +10,44 @@ const categories = [
 ];
 
 const products = [
-  // Сосиски та сардельки
-  { id: 1, name: 'Баварські сардельки', weight: '500г', category: 'Сосиски та сардельки' },
-  { id: 2, name: 'Сосиски молочні', weight: '400г', category: 'Сосиски та сардельки' },
-  { id: 3, name: 'Сосиски класичні', weight: '450г', category: 'Сосиски та сардельки' },
-
-  // Варені ковбаси
-  { id: 4, name: 'Докторська', weight: '700г', category: 'Варені ковбаси' },
-  { id: 5, name: 'Молочна ковбаса', weight: '600г', category: 'Варені ковбаси' },
-  { id: 6, name: 'Дитяча ковбаса', weight: '500г', category: 'Варені ковбаси' },
-
-  // Напівкопчені ковбаси
-  { id: 7, name: 'Краківська', weight: '600г', category: 'Напівкопчені ковбаси' },
-  { id: 8, name: 'Мисливська', weight: '500г', category: 'Напівкопчені ковбаси' },
-
-  // Мʼясні делікатеси
-  { id: 9, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси' },
-  { id: 10, name: 'Шинка', weight: '150г', category: 'Мʼясні делікатеси' },
-  { id: 11, name: 'Буженина', weight: '200г', category: 'Мʼясні делікатеси' }
+  {
+    id: 1,
+    name: 'Баварські сардельки',
+    weight: '500г',
+    category: 'Сосиски та сардельки',
+    image: 'https://via.placeholder.com/600x400?text=Баварські+сардельки',
+    description: 'Соковиті сардельки з ніжним смаком.'
+  },
+  {
+    id: 2,
+    name: 'Сосиски молочні',
+    weight: '400г',
+    category: 'Сосиски та сардельки',
+    image: 'https://via.placeholder.com/600x400?text=Сосиски+молочні',
+    description: 'Класичні молочні сосиски.'
+  },
+  {
+    id: 3,
+    name: 'Докторська',
+    weight: '700г',
+    category: 'Варені ковбаси',
+    image: 'https://via.placeholder.com/600x400?text=Докторська',
+    description: 'Традиційна варена ковбаса.'
+  },
+  {
+    id: 4,
+    name: 'Бекон',
+    weight: '100г',
+    category: 'Мʼясні делікатеси',
+    image: 'https://via.placeholder.com/600x400?text=Бекон',
+    description: 'Ароматний мʼясний бекон.'
+  }
 ];
 
 let cart = {};
 let screen = 'catalog';
 let activeCategory = 'Вся продукція';
+let currentProduct = null;
 let comment = '';
 
 const categoriesEl = document.getElementById('categories');
@@ -45,6 +60,7 @@ function render() {
   footerEl.classList.remove('show');
 
   if (screen === 'catalog') renderCatalog();
+  if (screen === 'product') renderProduct();
   if (screen === 'cart') renderCart();
 }
 
@@ -74,7 +90,11 @@ function renderCatalog() {
     const row = document.createElement('div');
     row.className = 'product';
     row.innerHTML = `
-      <div><strong>${p.name}</strong><br><small>${p.weight}</small></div>
+      <img src="${p.image}">
+      <div class="product-info">
+        <strong>${p.name}</strong><br>
+        <small>${p.weight}</small>
+      </div>
       <div class="controls">
         <button>-</button>
         <input type="number" min="0" value="${qty}">
@@ -82,8 +102,14 @@ function renderCatalog() {
       </div>
     `;
 
-    const [minus, input, plus] = row.querySelectorAll('button, input');
+    row.querySelector('img').onclick =
+    row.querySelector('.product-info').onclick = () => {
+      currentProduct = p;
+      screen = 'product';
+      render();
+    };
 
+    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
@@ -92,6 +118,56 @@ function renderCatalog() {
   });
 
   updateFooter();
+}
+
+function renderProduct() {
+  titleEl.textContent = currentProduct.name;
+  contentEl.innerHTML = `
+    <div class="product-page">
+      <img src="${currentProduct.image}">
+      <div style="padding:16px">
+        <h2>${currentProduct.name}</h2>
+        <p><strong>${currentProduct.weight}</strong></p>
+        <p>${currentProduct.description}</p>
+      </div>
+    </div>
+  `;
+
+  const qty = cart[currentProduct.id] || 0;
+
+  const controls = document.createElement('div');
+  controls.className = 'controls';
+  controls.style.justifyContent = 'center';
+  controls.innerHTML = `
+    <button>-</button>
+    <input type="number" min="0" value="${qty}">
+    <button>+</button>
+  `;
+
+  const [minus, input, plus] = controls.querySelectorAll('button, input');
+  minus.onclick = () => updateQty(currentProduct.id, qty - 1);
+  plus.onclick = () => updateQty(currentProduct.id, qty + 1);
+  input.onchange = e => updateQty(currentProduct.id, Number(e.target.value));
+
+  contentEl.appendChild(controls);
+
+  const addBtn = document.createElement('div');
+  addBtn.className = 'button';
+  addBtn.textContent = 'Додати в кошик';
+  addBtn.onclick = () => {
+    screen = 'catalog';
+    render();
+  };
+  contentEl.appendChild(addBtn);
+
+  const back = document.createElement('div');
+  back.className = 'button back';
+  back.textContent = 'Повернутись до каталогу';
+  back.onclick = () => {
+    screen = 'catalog';
+    render();
+  };
+  contentEl.appendChild(back);
 }
 
 function renderCart() {
@@ -103,31 +179,23 @@ function renderCart() {
     const qty = cart[id];
 
     const row = document.createElement('div');
-    row.className = 'cart-item';
+    row.className = 'product';
     row.innerHTML = `
-      <div class="cart-row">
-        <div>
-          <strong>${p.name}</strong><br>
-          <small>${p.weight}</small>
-          <div class="controls">
-            <button>-</button>
-            <input type="number" min="1" value="${qty}">
-            <button>+</button>
-          </div>
-        </div>
-        <button class="remove-btn">Видалити позицію</button>
+      <div>
+        <strong>${p.name}</strong><br>
+        <small>${p.weight}</small>
+      </div>
+      <div class="controls">
+        <button>-</button>
+        <input type="number" min="1" value="${qty}">
+        <button>+</button>
       </div>
     `;
 
-    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
-
+    const [minus, input, plus] = row.querySelectorAll('button, input');
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
-    row.querySelector('.remove-btn').onclick = () => {
-      delete cart[id];
-      render();
-    };
 
     contentEl.appendChild(row);
   });
@@ -177,12 +245,7 @@ function submitOrder() {
 
   const items = Object.keys(cart).map(id => {
     const p = products.find(x => x.id == id);
-    return {
-      id: p.id,
-      name: p.name,
-      weight: p.weight,
-      qty: cart[id]
-    };
+    return { name: p.name, qty: cart[id], weight: p.weight };
   });
 
   tg.sendData(JSON.stringify({ items, comment }));
