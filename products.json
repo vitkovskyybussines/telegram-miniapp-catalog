@@ -12,16 +12,21 @@
       "category": "sausages",
       "name": "Баварські сардельки",
       "weight": "500г",
-      "price": 27552,
-      "image": "images/bavarian.jpg"
+      "image": "https://via.placeholder.com/150"
     },
     {
       "id": 2,
+      "category": "sausages",
+      "name": "Сосиски молочні",
+      "weight": "400г",
+      "image": "https://via.placeholder.com/150"
+    },
+    {
+      "id": 3,
       "category": "delicacies",
       "name": "Бекон",
       "weight": "100г",
-      "price": 17584,
-      "image": "images/bacon.jpg"
+      "image": "https://via.placeholder.com/150"
     }
   ]
 }
