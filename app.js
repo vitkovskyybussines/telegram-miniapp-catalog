@@ -14,7 +14,6 @@ let screen = 'catalog';
 let currentProductId = null;
 
 const CART_KEY = 'cart';
-const COMMENT_KEY = 'comment';
 
 /* =====================
    INIT
@@ -27,7 +26,6 @@ fetch('./products.json')
     categories = data.categories;
     loadCart();
 
-    // 🔒 FIX: якщо кошик порожній — тільки каталог
     if (Object.keys(cart).length === 0) {
       screen = 'catalog';
     }
@@ -55,7 +53,6 @@ function saveCart() {
 function clearCart() {
   cart = {};
   localStorage.removeItem(CART_KEY);
-  localStorage.removeItem(COMMENT_KEY);
 }
 
 /* =====================
@@ -81,7 +78,6 @@ function updateQty(id, value) {
 ===================== */
 
 function render() {
-  // 🔒 FIX: ніколи не показуємо cart без товарів
   if (screen === 'cart' && cartItemsCount() === 0) {
     screen = 'catalog';
   }
@@ -103,7 +99,7 @@ function render() {
 }
 
 /* =====================
-   CATALOG
+   CATEGORIES
 ===================== */
 
 function renderCategories() {
@@ -123,6 +119,10 @@ function renderCategories() {
     root.appendChild(el);
   });
 }
+
+/* =====================
+   PRODUCTS
+===================== */
 
 function renderProducts() {
   if (screen !== 'catalog') return;
@@ -200,29 +200,21 @@ function renderProductScreen() {
     <div>${p.weight}</div>
     <p>${p.description || ''}</p>
 
-    ${p.features ? `
-      <ul>
-        ${p.features.map(f => `<li>${f}</li>`).join('')}
-      </ul>
-    ` : ''}
-
     <div class="controls">
-      <button id="prod-minus">-</button>
-      <input id="prod-input" type="number" min="0" value="${qty}">
-      <button id="prod-plus">+</button>
+      <button>-</button>
+      <input type="number" min="0" value="${qty}">
+      <button>+</button>
     </div>
 
-    <button id="back-product">⬅️ Назад</button>
+    <button id="back-product">⬅️ Повернутись до каталогу</button>
   `;
 
-  document.getElementById('prod-minus').onclick =
-    () => updateQty(p.id, qty - 1);
+  const buttons = document.querySelectorAll('#product-content .controls button');
+  const input = document.querySelector('#product-content input');
 
-  document.getElementById('prod-plus').onclick =
-    () => updateQty(p.id, qty + 1);
-
-  document.getElementById('prod-input').onchange =
-    e => updateQty(p.id, Number(e.target.value));
+  buttons[0].onclick = () => updateQty(p.id, qty - 1);
+  buttons[1].onclick = () => updateQty(p.id, qty + 1);
+  input.onchange = e => updateQty(p.id, Number(e.target.value));
 
   document.getElementById('back-product').onclick = () => {
     screen = 'catalog';
@@ -260,20 +252,7 @@ function renderCartScreen() {
   const list = document.getElementById('cart-items');
   list.innerHTML = '';
 
-  const items = Object.entries(cart);
-  if (!items.length) {
-    list.innerHTML = `
-      <p>🛒 Кошик порожній</p>
-      <button id="back-to-catalog">⬅️ Повернутись до каталогу</button>
-    `;
-    document.getElementById('back-to-catalog').onclick = () => {
-      screen = 'catalog';
-      render();
-    };
-    return;
-  }
-
-  items.forEach(([id, qty]) => {
+  Object.entries(cart).forEach(([id, qty]) => {
     const p = products.find(x => x.id == id);
 
     const row = document.createElement('div');
@@ -281,26 +260,32 @@ function renderCartScreen() {
 
     row.innerHTML = `
       <div class="cart-title">${p.name} (${p.weight})</div>
-      <div class="controls">
-        <button>-</button>
-        <input type="number" min="0" value="${qty}">
-        <button>+</button>
-        <button class="remove">✕</button>
+
+      <div class="cart-controls">
+        <div class="controls">
+          <button>-</button>
+          <input type="number" min="0" value="${qty}">
+          <button>+</button>
+        </div>
+
+        <button class="remove-btn">Видалити позицію</button>
       </div>
     `;
 
-    const buttons = row.querySelectorAll('button');
-    const input = row.querySelector('input');
+    const minus = row.querySelector('.controls button:nth-child(1)');
+    const plus = row.querySelector('.controls button:nth-child(3)');
+    const input = row.querySelector('.controls input');
+    const removeBtn = row.querySelector('.remove-btn');
 
-    buttons[0].onclick = () => updateQty(id, qty - 1);
-    buttons[1].onclick = () => updateQty(id, qty + 1);
-    buttons[2].onclick = () => {
+    minus.onclick = () => updateQty(id, qty - 1);
+    plus.onclick = () => updateQty(id, qty + 1);
+    input.onchange = e => updateQty(id, Number(e.target.value));
+
+    removeBtn.onclick = () => {
       delete cart[id];
       saveCart();
       render();
     };
-
-    input.onchange = e => updateQty(id, Number(e.target.value));
 
     list.appendChild(row);
   });
@@ -328,8 +313,7 @@ document.getElementById('submit').onclick = () => {
 
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items,
-    comment: document.getElementById('comment').value.trim()
+    items
   }));
 
   clearCart();
