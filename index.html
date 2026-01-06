@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Зробити замовлення</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Telegram Mini App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
-      background: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
     }
 
     h1 {
@@ -19,48 +21,34 @@
     }
 
     .screen {
-      animation: fadeSlide 0.25s ease;
-      padding-bottom: 120px;
+      animation: fade 0.25s ease;
+      padding-bottom: 40px;
     }
 
-    @keyframes fadeSlide {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding: 0 12px 12px;
-    }
-
-    .tab {
-      padding: 8px 14px;
-      border-radius: 16px;
-      background: #eee;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .tab.active {
-      background: #2196f3;
-      color: #fff;
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .product {
       display: flex;
+      align-items: center;
       gap: 12px;
       padding: 12px;
       border-bottom: 1px solid #eee;
-      align-items: center;
     }
 
     .product img {
       width: 64px;
       height: 64px;
-      border-radius: 8px;
       object-fit: cover;
+      border-radius: 8px;
       cursor: pointer;
     }
 
@@ -69,46 +57,20 @@
       cursor: pointer;
     }
 
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: #2196f3;
-      color: #fff;
-      font-size: 18px;
-    }
-
-    .count {
-      width: 36px;
-      text-align: center;
-    }
-
-    .footer {
-      position: fixed;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
-      background: #2196f3;
-      color: #fff;
+    .button {
+      margin: 12px;
       padding: 14px;
+      background: #2196f3;
+      color: #fff;
       text-align: center;
       border-radius: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.25s ease, opacity 0.25s ease;
     }
 
-    .footer.hidden {
-      opacity: 0;
-      transform: translateY(20px);
-      pointer-events: none;
+    .button.secondary {
+      background: #eeeeee;
+      color: #000;
     }
 
     .product-img-large {
@@ -116,50 +78,12 @@
       border-radius: 12px;
       margin-bottom: 12px;
     }
-
-    .add-row {
-      display: flex;
-      gap: 12px;
-      margin: 12px;
-    }
-
-    .add-btn {
-      flex: 1;
-      background: #2196f3;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .action {
-      margin: 12px;
-      padding: 14px;
-      text-align: center;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .secondary {
-      background: #eee;
-    }
-
-    textarea {
-      width: calc(100% - 24px);
-      margin: 12px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
   </style>
 </head>
 
 <body>
   <h1 id="title"></h1>
   <div id="content"></div>
-  <div id="footer" class="footer hidden"></div>
 
   <script src="app.js"></script>
 </body>
