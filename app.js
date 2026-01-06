@@ -1,27 +1,15 @@
 const tg = window.Telegram.WebApp;
 
 let screen = 'catalog';
-let category = 'Вся продукція';
 let selectedProduct = null;
-let comment = '';
-
 let cart = {};
-
-const categories = [
-  'Вся продукція',
-  'Сосиски та сардельки',
-  'Варені ковбаси',
-  'Напівкопчені ковбаси',
-  'Мʼясні делікатеси'
-];
 
 const products = [
   {
     id: 1,
     name: 'Сосиски молочні',
     weight: '400г',
-    category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/300x200?text=Сосиски',
+    image: 'https://via.placeholder.com/600x400?text=Сосиски',
     description: 'Ніжні молочні сосиски',
     composition: 'Мʼясо, молоко'
   },
@@ -29,26 +17,15 @@ const products = [
     id: 2,
     name: 'Баварські сардельки',
     weight: '500г',
-    category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/300x200?text=Сардельки',
+    image: 'https://via.placeholder.com/600x400?text=Сардельки',
     description: 'Соковиті баварські сардельки',
     composition: 'Свинина, спеції'
   },
   {
     id: 3,
-    name: 'Докторська ковбаса',
-    weight: '700г',
-    category: 'Варені ковбаси',
-    image: 'https://via.placeholder.com/300x200?text=Докторська',
-    description: 'Класична докторська ковбаса',
-    composition: 'Свинина, яловичина'
-  },
-  {
-    id: 4,
     name: 'Бекон',
     weight: '100г',
-    category: 'Мʼясні делікатеси',
-    image: 'https://via.placeholder.com/300x200?text=Бекон',
+    image: 'https://via.placeholder.com/600x400?text=Бекон',
     description: 'Копчений бекон',
     composition: 'Свинина'
   }
@@ -57,82 +34,31 @@ const products = [
 function render() {
   const title = document.getElementById('title');
   const content = document.getElementById('content');
-  const footer = document.getElementById('footer');
-
   content.innerHTML = '';
-  footer.classList.add('hidden');
 
   if (screen === 'catalog') {
     title.textContent = 'Зробити замовлення';
 
-    const tabs = document.createElement('div');
-    tabs.className = 'tabs';
+    products.forEach(product => {
+      const row = document.createElement('div');
+      row.className = 'product';
 
-    categories.forEach(c => {
-      const t = document.createElement('div');
-      t.className = 'tab' + (c === category ? ' active' : '');
-      t.textContent = c;
-      t.onclick = () => {
-        category = c;
-        render();
-      };
-      tabs.appendChild(t);
+      const img = document.createElement('img');
+      img.src = product.image;
+      img.onclick = () => openProduct(product);
+
+      const info = document.createElement('div');
+      info.className = 'product-info';
+      info.innerHTML = `
+        <strong>${product.name}</strong><br>
+        ${product.weight}
+      `;
+      info.onclick = () => openProduct(product);
+
+      row.appendChild(img);
+      row.appendChild(info);
+      content.appendChild(row);
     });
-
-    content.appendChild(tabs);
-
-    products
-      .filter(p => category === 'Вся продукція' || p.category === category)
-      .forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'product';
-
-        const img = document.createElement('img');
-        img.src = p.image;
-        img.onclick = () => openProduct(p);
-
-        const info = document.createElement('div');
-        info.className = 'product-info';
-        info.innerHTML = `<strong>${p.name}</strong><br>${p.weight}`;
-        info.onclick = () => openProduct(p);
-
-        const controls = document.createElement('div');
-        controls.className = 'controls';
-
-        const minus = document.createElement('button');
-        minus.className = 'btn';
-        minus.textContent = '−';
-        minus.onclick = () => {
-          cart[p.id] = Math.max(0, (cart[p.id] || 0) - 1);
-          render();
-        };
-
-        const count = document.createElement('div');
-        count.className = 'count';
-        count.textContent = cart[p.id] || 0;
-
-        const plus = document.createElement('button');
-        plus.className = 'btn';
-        plus.textContent = '+';
-        plus.onclick = () => {
-          cart[p.id] = (cart[p.id] || 0) + 1;
-          render();
-        };
-
-        controls.append(minus, count, plus);
-        row.append(img, info, controls);
-        content.appendChild(row);
-      });
-
-    const total = Object.values(cart).reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      footer.textContent = `Перейти до замовлення — ${total} позицій`;
-      footer.onclick = () => {
-        screen = 'cart';
-        render();
-      };
-      footer.classList.remove('hidden');
-    }
   }
 
   if (screen === 'product') {
@@ -146,86 +72,31 @@ function render() {
         <p>${p.description}</p>
         <p><small>${p.composition}</small></p>
 
-        <div class="add-row">
-          <div class="controls">
-            <button class="btn" onclick="changeQty(${p.id}, -1)">−</button>
-            <div class="count">${cart[p.id] || 0}</div>
-            <button class="btn" onclick="changeQty(${p.id}, 1)">+</button>
-          </div>
-
-          <button class="add-btn" onclick="addFromProduct(${p.id})">
-            Додати в кошик
-          </button>
+        <div class="button" onclick="addToCart(${p.id})">
+          Додати в кошик
         </div>
 
-        <div class="action secondary" onclick="backToCatalog()">
-          Повернутись до каталогу
+        <div class="button secondary" onclick="goBack()">
+          Назад
         </div>
       </div>
     `;
   }
-
-  if (screen === 'cart') {
-    title.textContent = 'Кошик';
-
-    const wrap = document.createElement('div');
-    wrap.className = 'screen';
-
-    Object.keys(cart).forEach(id => {
-      if (cart[id] === 0) return;
-      const p = products.find(x => x.id == id);
-
-      const row = document.createElement('div');
-      row.className = 'product';
-      row.innerHTML = `
-        <div class="product-info">
-          <strong>${p.name}</strong><br>${p.weight}
-        </div>
-        <div class="controls">
-          <button class="btn" onclick="changeQty(${p.id}, -1)">−</button>
-          <div class="count">${cart[p.id]}</div>
-          <button class="btn" onclick="changeQty(${p.id}, 1)">+</button>
-        </div>
-      `;
-      wrap.appendChild(row);
-    });
-
-    wrap.innerHTML += `
-      <textarea placeholder="Коментар до замовлення" oninput="comment=this.value">${comment}</textarea>
-      <div class="action add-btn" onclick="submitOrder()">Оформити замовлення</div>
-      <div class="action secondary" onclick="backToCatalog()">Повернутись до каталогу</div>
-    `;
-
-    content.appendChild(wrap);
-  }
 }
 
-function openProduct(p) {
-  selectedProduct = p;
+function openProduct(product) {
+  selectedProduct = product;
   screen = 'product';
   render();
 }
 
-function changeQty(id, delta) {
-  cart[id] = Math.max(0, (cart[id] || 0) + delta);
-  render();
-}
-
-function addFromProduct(id) {
-  cart[id] = (cart[id] || 0) + 1;
+function addToCart(productId) {
+  cart[productId] = (cart[productId] || 0) + 1;
   screen = 'catalog';
   render();
 }
 
-function backToCatalog() {
-  screen = 'catalog';
-  render();
-}
-
-function submitOrder() {
-  tg.sendData(JSON.stringify({ cart, comment }));
-  cart = {};
-  comment = '';
+function goBack() {
   screen = 'catalog';
   render();
 }
