@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "category": "sausages",
+    "name": "Баварські сардельки",
+    "weight": "500г"
+  },
+  {
+    "id": 2,
+    "category": "sausages",
+    "name": "Сосиски молочні",
+    "weight": "400г"
+  },
+  {
+    "id": 3,
+    "category": "delicacies",
+    "name": "Бекон",
+    "weight": "100г"
+  }
+]
