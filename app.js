@@ -1,15 +1,22 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+/* =====================
+   STATE
+===================== */
+
 let products = [];
 let categories = [];
 let activeCategory = 'all';
 
-const CART_KEY = 'cart';
-const COMMENT_KEY = 'comment';
-
 let cart = {};
-let confirmMode = false;
+let screen = 'catalog';
+
+const CART_KEY = 'cart';
+
+/* =====================
+   INIT
+===================== */
 
 fetch('./products.json')
   .then(r => r.json())
@@ -17,24 +24,17 @@ fetch('./products.json')
     products = data.products;
     categories = data.categories;
     loadCart();
-    renderCategories();
-    renderProducts();
-    renderCart();
+    render();
   });
 
 /* =====================
-   Storage
+   STORAGE
 ===================== */
 
 function loadCart() {
   try {
-    const savedCart = localStorage.getItem(CART_KEY);
-    const savedComment = localStorage.getItem(COMMENT_KEY);
-
-    if (savedCart) cart = JSON.parse(savedCart);
-    if (savedComment) {
-      document.getElementById('comment').value = savedComment;
-    }
+    const saved = localStorage.getItem(CART_KEY);
+    if (saved) cart = JSON.parse(saved);
   } catch {
     cart = {};
   }
@@ -42,27 +42,66 @@ function loadCart() {
 
 function saveCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  localStorage.setItem(
-    COMMENT_KEY,
-    document.getElementById('comment').value || ''
-  );
 }
 
 function clearCart() {
   cart = {};
   localStorage.removeItem(CART_KEY);
-  localStorage.removeItem(COMMENT_KEY);
 }
 
 /* =====================
-   UI
+   HELPERS
+===================== */
+
+function cartItemsCount() {
+  return Object.keys(cart).length;
+}
+
+function cartTotal() {
+  return Object.entries(cart).reduce((sum, [id, qty]) => {
+    const p = products.find(x => x.id == id);
+    return sum + p.price * qty;
+  }, 0);
+}
+
+function formatPrice(v) {
+  return v.toLocaleString('uk-UA') + ' UZS';
+}
+
+function updateQty(id, value) {
+  if (!value || value <= 0) {
+    delete cart[id];
+  } else {
+    cart[id] = value;
+  }
+  saveCart();
+  render();
+}
+
+/* =====================
+   RENDER
+===================== */
+
+function render() {
+  document.getElementById('catalog-screen').style.display =
+    screen === 'catalog' ? 'block' : 'none';
+  document.getElementById('cart-screen').style.display =
+    screen === 'cart' ? 'block' : 'none';
+
+  renderCategories();
+  renderProducts();
+  renderBottomButton();
+  renderCartScreen();
+}
+
+/* =====================
+   CATALOG
 ===================== */
 
 function renderCategories() {
-  if (confirmMode) return;
+  if (screen !== 'catalog') return;
 
   const root = document.getElementById('categories');
-  root.style.display = 'flex';
   root.innerHTML = '';
 
   categories.forEach(c => {
@@ -71,7 +110,6 @@ function renderCategories() {
     el.innerText = c.name;
     el.onclick = () => {
       activeCategory = c.id;
-      renderCategories();
       renderProducts();
     };
     root.appendChild(el);
@@ -79,10 +117,10 @@ function renderCategories() {
 }
 
 function renderProducts() {
+  if (screen !== 'catalog') return;
+
   const root = document.getElementById('products');
   root.innerHTML = '';
-
-  if (confirmMode) return;
 
   products
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
@@ -97,17 +135,17 @@ function renderProducts() {
         <div class="product-info">
           <div class="product-name">${p.name}</div>
           <div class="product-weight">${p.weight}</div>
+          <div class="product-price">${formatPrice(p.price)}</div>
           <div class="controls">
             <button>-</button>
-            <input type="number" min="0" value="${qty}" placeholder="0">
+            <input type="number" min="0" value="${qty}">
             <button>+</button>
           </div>
         </div>
       `;
 
-      const minus = el.querySelectorAll('button')[0];
+      const [minus, plus] = el.querySelectorAll('button');
       const input = el.querySelector('input');
-      const plus = el.querySelectorAll('button')[1];
 
       minus.onclick = () => updateQty(p.id, (cart[p.id] || 0) - 1);
       plus.onclick = () => updateQty(p.id, (cart[p.id] || 0) + 1);
@@ -117,128 +155,95 @@ function renderProducts() {
     });
 }
 
-function renderCart() {
-  const root = document.getElementById('cart-items');
-  root.innerHTML = '';
+/* =====================
+   BOTTOM BUTTON
+===================== */
 
-  const items = Object.entries(cart);
+function renderBottomButton() {
+  const btn = document.getElementById('go-cart');
+  const count = cartItemsCount();
 
-  if (!items.length) {
-    root.innerText = 'Кошик порожній';
-    return;
+  if (screen === 'catalog' && count > 0) {
+    btn.style.display = 'block';
+    btn.innerText = `Перейти до замовлення — ${count} позицій • ${formatPrice(cartTotal())}`;
+    btn.onclick = () => {
+      screen = 'cart';
+      render();
+    };
+  } else {
+    btn.style.display = 'none';
   }
+}
 
-  items.forEach(([id, qty]) => {
+/* =====================
+   CART SCREEN
+===================== */
+
+function renderCartScreen() {
+  if (screen !== 'cart') return;
+
+  const list = document.getElementById('cart-items');
+  list.innerHTML = '';
+
+  Object.entries(cart).forEach(([id, qty]) => {
     const p = products.find(x => x.id == id);
 
     const row = document.createElement('div');
-    row.style.marginBottom = '6px';
+    row.className = 'cart-row';
 
     row.innerHTML = `
-      <div><b>${p.name}</b> (${p.weight})</div>
+      <b>${p.name}</b> (${p.weight})<br>
+      ${formatPrice(p.price)} × ${qty} = <b>${formatPrice(p.price * qty)}</b>
       <div class="controls">
         <button>-</button>
         <input type="number" min="0" value="${qty}">
         <button>+</button>
-        <button style="background:#d9534f">✕</button>
+        <button class="remove">✕</button>
       </div>
     `;
 
-    const buttons = row.querySelectorAll('button');
+    const [minus, plus, remove] = row.querySelectorAll('button');
     const input = row.querySelector('input');
 
-    buttons[0].onclick = () => updateQty(id, qty - 1);
-    buttons[1].onclick = () => updateQty(id, qty + 1);
-    buttons[2].onclick = () => removeItem(id);
+    minus.onclick = () => updateQty(id, qty - 1);
+    plus.onclick = () => updateQty(id, qty + 1);
+    remove.onclick = () => {
+      delete cart[id];
+      saveCart();
+      render();
+    };
     input.onchange = () => updateQty(id, Number(input.value));
 
-    root.appendChild(row);
+    list.appendChild(row);
   });
+
+  document.getElementById('cart-total').innerText =
+    'Разом: ' + formatPrice(cartTotal());
 }
 
 /* =====================
-   Logic
+   ACTIONS
 ===================== */
 
-function updateQty(id, value) {
-  if (!value || value <= 0) {
-    delete cart[id];
-  } else {
-    cart[id] = value;
-  }
-  saveCart();
-  renderProducts();
-  renderCart();
-}
-
-function removeItem(id) {
-  delete cart[id];
-  saveCart();
-  renderProducts();
-  renderCart();
-}
-
-/* =====================
-   Submit & Confirm
-===================== */
-
-document.getElementById('comment').oninput = saveCart;
+document.getElementById('back').onclick = () => {
+  screen = 'catalog';
+  render();
+};
 
 document.getElementById('submit').onclick = () => {
-  const entries = Object.entries(cart);
-  if (!entries.length) {
-    alert('Кошик порожній');
-    return;
-  }
-
-  // 1️⃣ Перехід у режим підтвердження
-  if (!confirmMode) {
-    confirmMode = true;
-
-    document.getElementById('categories').style.display = 'none';
-
-    document.getElementById('products').innerHTML = `
-      <div style="padding:10px">
-        <h3>Підтвердження замовлення</h3>
-        ${entries.map(([id, qty]) => {
-          const p = products.find(x => x.id == id);
-          return `<div>• ${p.name} (${p.weight}) × ${qty}</div>`;
-        }).join('')}
-        ${document.getElementById('comment').value
-          ? `<br><b>Коментар:</b><br>${document.getElementById('comment').value}`
-          : ''}
-        <br><br>
-        <button id="edit" style="width:100%;margin-bottom:8px">⬅️ Редагувати</button>
-      </div>
-    `;
-
-    document.getElementById('submit').innerText = '✅ Підтвердити';
-
-    document.getElementById('edit').onclick = () => {
-      confirmMode = false;
-      document.getElementById('submit').innerText = 'Оформити замовлення';
-      renderCategories();
-      renderProducts();
-      renderCart();
-    };
-
-    return;
-  }
-
-  // 2️⃣ Підтверджено — відправка
-  const payloadItems = entries.map(([id, qty]) => {
+  const items = Object.entries(cart).map(([id, qty]) => {
     const p = products.find(x => x.id == id);
     return {
       name: p.name,
-      weight: p.weight,
-      qty
+      qty,
+      price: p.price
     };
   });
 
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items: payloadItems,
-    comment: document.getElementById('comment').value.trim()
+    items,
+    total: cartTotal()
   }));
 
   clearCart();
