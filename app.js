@@ -1,104 +1,193 @@
 const tg = window.Telegram.WebApp;
+tg.expand();
 
-let screen = 'catalog';
-let selectedProduct = null;
-let cart = {};
-
-const products = [
-  {
-    id: 1,
-    name: 'Сосиски молочні',
-    weight: '400г',
-    image: 'https://via.placeholder.com/600x400?text=Сосиски',
-    description: 'Ніжні молочні сосиски',
-    composition: 'Мʼясо, молоко'
-  },
-  {
-    id: 2,
-    name: 'Баварські сардельки',
-    weight: '500г',
-    image: 'https://via.placeholder.com/600x400?text=Сардельки',
-    description: 'Соковиті баварські сардельки',
-    composition: 'Свинина, спеції'
-  },
-  {
-    id: 3,
-    name: 'Бекон',
-    weight: '100г',
-    image: 'https://via.placeholder.com/600x400?text=Бекон',
-    description: 'Копчений бекон',
-    composition: 'Свинина'
-  }
+const categories = [
+  'Вся продукція',
+  'Сосиски та сардельки',
+  'Варені ковбаси',
+  'Напівкопчені ковбаси',
+  'Мʼясні делікатеси'
 ];
 
+const products = [
+  // Сосиски та сардельки
+  { id: 1, name: 'Баварські сардельки', weight: '500г', category: 'Сосиски та сардельки' },
+  { id: 2, name: 'Сосиски молочні', weight: '400г', category: 'Сосиски та сардельки' },
+  { id: 3, name: 'Сосиски класичні', weight: '450г', category: 'Сосиски та сардельки' },
+
+  // Варені ковбаси
+  { id: 4, name: 'Докторська', weight: '700г', category: 'Варені ковбаси' },
+  { id: 5, name: 'Молочна ковбаса', weight: '600г', category: 'Варені ковбаси' },
+  { id: 6, name: 'Дитяча ковбаса', weight: '500г', category: 'Варені ковбаси' },
+
+  // Напівкопчені ковбаси
+  { id: 7, name: 'Краківська', weight: '600г', category: 'Напівкопчені ковбаси' },
+  { id: 8, name: 'Мисливська', weight: '500г', category: 'Напівкопчені ковбаси' },
+
+  // Мʼясні делікатеси
+  { id: 9, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси' },
+  { id: 10, name: 'Шинка', weight: '150г', category: 'Мʼясні делікатеси' },
+  { id: 11, name: 'Буженина', weight: '200г', category: 'Мʼясні делікатеси' }
+];
+
+let cart = {};
+let screen = 'catalog';
+let activeCategory = 'Вся продукція';
+let comment = '';
+
+const categoriesEl = document.getElementById('categories');
+const contentEl = document.getElementById('content');
+const footerEl = document.getElementById('footer');
+const titleEl = document.getElementById('title');
+
 function render() {
-  const title = document.getElementById('title');
-  const content = document.getElementById('content');
-  content.innerHTML = '';
+  categoriesEl.style.display = screen === 'catalog' ? 'flex' : 'none';
+  footerEl.classList.remove('show');
 
-  if (screen === 'catalog') {
-    title.textContent = 'Зробити замовлення';
+  if (screen === 'catalog') renderCatalog();
+  if (screen === 'cart') renderCart();
+}
 
-    products.forEach(product => {
-      const row = document.createElement('div');
-      row.className = 'product';
+function renderCatalog() {
+  titleEl.textContent = 'Зробити замовлення';
+  categoriesEl.innerHTML = '';
+  contentEl.innerHTML = '';
 
-      const img = document.createElement('img');
-      img.src = product.image;
-      img.onclick = () => openProduct(product);
+  categories.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'category' + (c === activeCategory ? ' active' : '');
+    el.textContent = c;
+    el.onclick = () => {
+      activeCategory = c;
+      render();
+    };
+    categoriesEl.appendChild(el);
+  });
 
-      const info = document.createElement('div');
-      info.className = 'product-info';
-      info.innerHTML = `
-        <strong>${product.name}</strong><br>
-        ${product.weight}
-      `;
-      info.onclick = () => openProduct(product);
+  const list = activeCategory === 'Вся продукція'
+    ? products
+    : products.filter(p => p.category === activeCategory);
 
-      row.appendChild(img);
-      row.appendChild(info);
-      content.appendChild(row);
-    });
-  }
+  list.forEach(p => {
+    const qty = cart[p.id] || 0;
 
-  if (screen === 'product') {
-    const p = selectedProduct;
-    title.textContent = p.name;
-
-    content.innerHTML = `
-      <div class="screen">
-        <img class="product-img-large" src="${p.image}">
-        <p><strong>${p.weight}</strong></p>
-        <p>${p.description}</p>
-        <p><small>${p.composition}</small></p>
-
-        <div class="button" onclick="addToCart(${p.id})">
-          Додати в кошик
-        </div>
-
-        <div class="button secondary" onclick="goBack()">
-          Назад
-        </div>
+    const row = document.createElement('div');
+    row.className = 'product';
+    row.innerHTML = `
+      <div><strong>${p.name}</strong><br><small>${p.weight}</small></div>
+      <div class="controls">
+        <button>-</button>
+        <input type="number" min="0" value="${qty}">
+        <button>+</button>
       </div>
     `;
-  }
+
+    const [minus, input, plus] = row.querySelectorAll('button, input');
+
+    minus.onclick = () => updateQty(p.id, qty - 1);
+    plus.onclick = () => updateQty(p.id, qty + 1);
+    input.onchange = e => updateQty(p.id, Number(e.target.value));
+
+    contentEl.appendChild(row);
+  });
+
+  updateFooter();
 }
 
-function openProduct(product) {
-  selectedProduct = product;
-  screen = 'product';
+function renderCart() {
+  titleEl.textContent = 'Кошик';
+  contentEl.innerHTML = '';
+
+  Object.keys(cart).forEach(id => {
+    const p = products.find(x => x.id == id);
+    const qty = cart[id];
+
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML = `
+      <div class="cart-row">
+        <div>
+          <strong>${p.name}</strong><br>
+          <small>${p.weight}</small>
+          <div class="controls">
+            <button>-</button>
+            <input type="number" min="1" value="${qty}">
+            <button>+</button>
+          </div>
+        </div>
+        <button class="remove-btn">Видалити позицію</button>
+      </div>
+    `;
+
+    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
+
+    minus.onclick = () => updateQty(p.id, qty - 1);
+    plus.onclick = () => updateQty(p.id, qty + 1);
+    input.onchange = e => updateQty(p.id, Number(e.target.value));
+    row.querySelector('.remove-btn').onclick = () => {
+      delete cart[id];
+      render();
+    };
+
+    contentEl.appendChild(row);
+  });
+
+  const textarea = document.createElement('textarea');
+  textarea.placeholder = 'Коментар до замовлення (необовʼязково)';
+  textarea.value = comment;
+  textarea.onchange = e => comment = e.target.value;
+  contentEl.appendChild(textarea);
+
+  const submit = document.createElement('div');
+  submit.className = 'button';
+  submit.textContent = 'Оформити замовлення';
+  submit.onclick = submitOrder;
+  contentEl.appendChild(submit);
+
+  const back = document.createElement('div');
+  back.className = 'button back';
+  back.textContent = 'Повернутись до каталогу';
+  back.onclick = () => {
+    screen = 'catalog';
+    render();
+  };
+  contentEl.appendChild(back);
+}
+
+function updateQty(id, qty) {
+  if (qty <= 0) delete cart[id];
+  else cart[id] = qty;
   render();
 }
 
-function addToCart(productId) {
-  cart[productId] = (cart[productId] || 0) + 1;
-  screen = 'catalog';
-  render();
+function updateFooter() {
+  const count = Object.keys(cart).length;
+  if (count === 0) return;
+
+  footerEl.textContent = `Перейти до замовлення — ${count} позицій`;
+  footerEl.classList.add('show');
+  footerEl.onclick = () => {
+    screen = 'cart';
+    render();
+  };
 }
 
-function goBack() {
-  screen = 'catalog';
-  render();
+function submitOrder() {
+  if (!confirm('Підтвердити замовлення?')) return;
+
+  const items = Object.keys(cart).map(id => {
+    const p = products.find(x => x.id == id);
+    return {
+      id: p.id,
+      name: p.name,
+      weight: p.weight,
+      qty: cart[id]
+    };
+  });
+
+  tg.sendData(JSON.stringify({ items, comment }));
+  cart = {};
+  tg.close();
 }
 
 render();
