@@ -20,18 +20,12 @@
 
     .screen {
       animation: fadeSlide 0.25s ease;
-      padding-bottom: 100px;
+      padding-bottom: 120px;
     }
 
     @keyframes fadeSlide {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .tabs {
@@ -56,24 +50,29 @@
 
     .product {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 12px;
       padding: 12px;
       border-bottom: 1px solid #eee;
+      align-items: center;
     }
 
-    .product-info {
+    .product img {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
       cursor: pointer;
     }
 
-    .product-info strong {
-      display: block;
+    .product-info {
+      flex: 1;
+      cursor: pointer;
     }
 
     .controls {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .btn {
@@ -112,26 +111,30 @@
       pointer-events: none;
     }
 
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid #eee;
+    .product-img-large {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
     }
 
-    .delete {
-      background: #f44336;
+    .add-row {
+      display: flex;
+      gap: 12px;
+      margin: 12px;
+    }
+
+    .add-row .controls {
+      flex-shrink: 0;
+    }
+
+    .add-btn {
+      flex: 1;
+      background: #2196f3;
       color: #fff;
       border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-    }
-
-    textarea {
-      width: calc(100% - 24px);
-      margin: 12px;
-      height: 80px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
     }
 
     .action {
@@ -143,19 +146,8 @@
       cursor: pointer;
     }
 
-    .primary {
-      background: #2196f3;
-      color: #fff;
-    }
-
     .secondary {
       background: #eee;
-    }
-
-    img.product-img {
-      width: 100%;
-      border-radius: 12px;
-      margin-bottom: 12px;
     }
   </style>
 </head>
