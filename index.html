@@ -32,7 +32,7 @@
 
     .category {
       padding: 8px 14px;
-      border-radius: 16px;
+      border-radius: 12px;
       background: #eee;
       cursor: pointer;
       white-space: nowrap;
@@ -49,11 +49,24 @@
       border-bottom: 1px solid #eee;
     }
 
-    .product-row {
+    .product-row,
+    .cart-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+    }
+
+    .product-info {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    img.thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     .controls {
@@ -63,9 +76,9 @@
     }
 
     .controls button {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 8px;
       border: none;
       background: #2196f3;
       color: #fff;
@@ -75,19 +88,22 @@
 
     .controls input {
       width: 60px;
+      height: 34px;
       text-align: center;
       font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
 
     .remove-btn {
-      margin-top: 8px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid #c62828;
       background: #ffeaea;
       color: #c62828;
-      border: 1px solid #c62828;
-      border-radius: 8px;
-      padding: 10px;
-      width: 100%;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     textarea {
@@ -95,6 +111,7 @@
       margin: 12px;
       height: 90px;
       font-size: 14px;
+      border-radius: 8px;
     }
 
     .button {
@@ -111,20 +128,6 @@
     .back {
       background: #ccc;
       color: #000;
-    }
-
-    img.thumb {
-      width: 60px;
-      height: 60px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-
-    .product-info {
-      flex: 1;
-      cursor: pointer;
     }
 
     .fade {
