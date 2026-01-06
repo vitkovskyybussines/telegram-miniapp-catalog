@@ -4,17 +4,50 @@ tg.expand();
 let products = [];
 let categories = [];
 let activeCategory = 'all';
-const cart = {};
+
+const CART_KEY = 'cart';
+const COMMENT_KEY = 'comment';
+
+let cart = {};
 
 fetch('./products.json')
   .then(r => r.json())
   .then(data => {
     products = data.products;
     categories = data.categories;
+    loadCart();
     renderCategories();
     renderProducts();
     renderCart();
   });
+
+function loadCart() {
+  try {
+    const savedCart = localStorage.getItem(CART_KEY);
+    const savedComment = localStorage.getItem(COMMENT_KEY);
+
+    if (savedCart) cart = JSON.parse(savedCart);
+    if (savedComment) {
+      document.getElementById('comment').value = savedComment;
+    }
+  } catch {
+    cart = {};
+  }
+}
+
+function saveCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  localStorage.setItem(
+    COMMENT_KEY,
+    document.getElementById('comment').value || ''
+  );
+}
+
+function clearCart() {
+  cart = {};
+  localStorage.removeItem(CART_KEY);
+  localStorage.removeItem(COMMENT_KEY);
+}
 
 function renderCategories() {
   const root = document.getElementById('categories');
@@ -66,12 +99,14 @@ function renderProducts() {
         if (!cart[p.id]) return;
         cart[p.id]--;
         if (cart[p.id] <= 0) delete cart[p.id];
+        saveCart();
         renderProducts();
         renderCart();
       };
 
       plus.onclick = () => {
         cart[p.id] = (cart[p.id] || 0) + 1;
+        saveCart();
         renderProducts();
         renderCart();
       };
@@ -83,6 +118,7 @@ function renderProducts() {
         } else {
           cart[p.id] = value;
         }
+        saveCart();
         renderProducts();
         renderCart();
       };
@@ -108,6 +144,8 @@ function renderCart() {
     .join('<br>');
 }
 
+document.getElementById('comment').oninput = saveCart;
+
 document.getElementById('submit').onclick = () => {
   const items = Object.entries(cart).map(([id, qty]) => {
     const p = products.find(x => x.id == id);
@@ -131,5 +169,6 @@ document.getElementById('submit').onclick = () => {
     comment
   }));
 
+  clearCart();
   tg.close();
 };
