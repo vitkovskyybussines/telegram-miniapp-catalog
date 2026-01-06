@@ -1,48 +1,37 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-let catalogEl = document.getElementById('catalog');
-let order = {};
+let cart = [];
 
-fetch('catalog.json')
-  .then(res => res.json())
-  .then(items => {
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
+fetch('./products.json')
+  .then(r => r.json())
+  .then(products => {
+    const container = document.getElementById('products');
 
-      div.innerHTML = `
-        <span>${item.name}</span>
-        <input type="number" min="0" step="0.1" placeholder="кг"
-          onchange="updateItem(${item.id}, '${item.name}', this.value)">
-      `;
-
-      catalogEl.appendChild(div);
+    products.forEach(p => {
+      const btn = document.createElement('button');
+      btn.innerText = `${p.name} (${p.weight})`;
+      btn.onclick = () => {
+        cart.push(p);
+        alert(`${p.name} додано`);
+      };
+      container.appendChild(btn);
     });
   });
 
-function updateItem(id, name, value) {
-  if (value && value > 0) {
-    order[id] = { name, weight: value };
-  } else {
-    delete order[id];
-  }
-}
-
-function submitOrder() {
-  const comment = document.getElementById('comment').value;
-
-  const items = Object.values(order);
-  if (!items.length) {
-    alert('Додайте хоча б один товар');
+document.getElementById('submit').onclick = () => {
+  if (!cart.length) {
+    alert('Кошик порожній');
     return;
   }
 
-  const data = {
-    items,
-    comment
-  };
+  tg.sendData(JSON.stringify({
+    items: cart.map(i => ({
+      name: i.name,
+      weight: i.weight,
+      qty: 1
+    }))
+  }));
 
-  tg.sendData(JSON.stringify(data));
   tg.close();
-}
+};
