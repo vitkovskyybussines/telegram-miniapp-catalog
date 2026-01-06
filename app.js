@@ -1,321 +1,177 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-/* =====================
-   STATE
-===================== */
+const categories = [
+  'Вся продукція',
+  'Сосиски та сардельки',
+  'Варені ковбаси',
+  'Напівкопчені ковбаси',
+  'Мʼясні делікатеси'
+];
 
-let products = [];
-let categories = [];
-let activeCategory = 'all';
+const products = [
+  { id: 1, name: 'Баварські сардельки', weight: '500г', category: 'Сосиски та сардельки' },
+  { id: 2, name: 'Сосиски молочні', weight: '400г', category: 'Сосиски та сардельки' },
+  { id: 3, name: 'Бекон', weight: '100г', category: 'Мʼясні делікатеси' }
+];
 
 let cart = {};
 let screen = 'catalog';
-let currentProductId = null;
+let activeCategory = 'Вся продукція';
+let comment = '';
 
-const CART_KEY = 'cart';
-
-/* =====================
-   INIT
-===================== */
-
-fetch('./products.json')
-  .then(r => r.json())
-  .then(data => {
-    products = data.products;
-    categories = data.categories;
-    loadCart();
-
-    if (Object.keys(cart).length === 0) {
-      screen = 'catalog';
-    }
-
-    render();
-  });
-
-/* =====================
-   STORAGE
-===================== */
-
-function loadCart() {
-  try {
-    const saved = localStorage.getItem(CART_KEY);
-    if (saved) cart = JSON.parse(saved);
-  } catch {
-    cart = {};
-  }
-}
-
-function saveCart() {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
-
-function clearCart() {
-  cart = {};
-  localStorage.removeItem(CART_KEY);
-}
-
-/* =====================
-   HELPERS
-===================== */
-
-function cartItemsCount() {
-  return Object.keys(cart).length;
-}
-
-function updateQty(id, value) {
-  if (!value || value <= 0) {
-    delete cart[id];
-  } else {
-    cart[id] = value;
-  }
-  saveCart();
-  render();
-}
-
-/* =====================
-   ROOT RENDER
-===================== */
+const categoriesEl = document.getElementById('categories');
+const contentEl = document.getElementById('content');
+const footerEl = document.getElementById('footer');
+const titleEl = document.getElementById('title');
 
 function render() {
-  if (screen === 'cart' && cartItemsCount() === 0) {
-    screen = 'catalog';
-  }
+  categoriesEl.style.display = screen === 'catalog' ? 'flex' : 'none';
+  footerEl.classList.remove('show');
 
-  document.getElementById('catalog-screen').style.display =
-    screen === 'catalog' ? 'block' : 'none';
-
-  document.getElementById('product-screen').style.display =
-    screen === 'product' ? 'block' : 'none';
-
-  document.getElementById('cart-screen').style.display =
-    screen === 'cart' ? 'block' : 'none';
-
-  renderCategories();
-  renderProducts();
-  renderProductScreen();
-  renderBottomButton();
-  renderCartScreen();
+  if (screen === 'catalog') renderCatalog();
+  if (screen === 'cart') renderCart();
 }
 
-/* =====================
-   CATEGORIES
-===================== */
-
-function renderCategories() {
-  if (screen !== 'catalog') return;
-
-  const root = document.getElementById('categories');
-  root.innerHTML = '';
+function renderCatalog() {
+  titleEl.textContent = 'Зробити замовлення';
+  categoriesEl.innerHTML = '';
+  contentEl.innerHTML = '';
 
   categories.forEach(c => {
     const el = document.createElement('div');
-    el.className = 'category' + (c.id === activeCategory ? ' active' : '');
-    el.innerText = c.name;
+    el.className = 'category' + (c === activeCategory ? ' active' : '');
+    el.textContent = c;
     el.onclick = () => {
-      activeCategory = c.id;
-      renderProducts();
+      activeCategory = c;
+      render();
     };
-    root.appendChild(el);
+    categoriesEl.appendChild(el);
   });
+
+  const list = activeCategory === 'Вся продукція'
+    ? products
+    : products.filter(p => p.category === activeCategory);
+
+  list.forEach(p => {
+    const qty = cart[p.id] || 0;
+
+    const row = document.createElement('div');
+    row.className = 'product';
+    row.innerHTML = `
+      <div><strong>${p.name}</strong><br><small>${p.weight}</small></div>
+      <div class="controls">
+        <button>-</button>
+        <input type="number" min="0" value="${qty}">
+        <button>+</button>
+      </div>
+    `;
+
+    const [minus, input, plus] = row.querySelectorAll('button, input');
+
+    minus.onclick = () => updateQty(p.id, qty - 1);
+    plus.onclick = () => updateQty(p.id, qty + 1);
+    input.onchange = e => updateQty(p.id, Number(e.target.value));
+
+    contentEl.appendChild(row);
+  });
+
+  updateFooter();
 }
 
-/* =====================
-   PRODUCTS
-===================== */
+function renderCart() {
+  titleEl.textContent = 'Кошик';
+  contentEl.innerHTML = '';
 
-function renderProducts() {
-  if (screen !== 'catalog') return;
+  Object.keys(cart).forEach(id => {
+    const p = products.find(x => x.id == id);
+    const qty = cart[id];
 
-  const root = document.getElementById('products');
-  root.innerHTML = '';
-
-  products
-    .filter(p => activeCategory === 'all' || p.category === activeCategory)
-    .forEach(p => {
-      const qty = cart[p.id] || '';
-
-      const el = document.createElement('div');
-      el.className = 'product';
-
-      el.innerHTML = `
-        <img src="${p.image}" class="clickable" />
-        <div class="product-info clickable">
-          <div class="product-name">${p.name}</div>
-          <div class="product-weight">${p.weight}</div>
-        </div>
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML = `
+      <div>
+        <strong>${p.name}</strong><br>
+        <small>${p.weight}</small>
         <div class="controls">
           <button>-</button>
-          <input type="number" min="0" value="${qty}" placeholder="0">
+          <input type="number" min="1" value="${qty}">
           <button>+</button>
+          <button class="remove-btn">Видалити позицію</button>
         </div>
-      `;
+      </div>
+    `;
 
-      el.querySelectorAll('.clickable').forEach(elm => {
-        elm.onclick = () => {
-          currentProductId = p.id;
-          screen = 'product';
-          render();
-        };
-      });
+    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
 
-      const minus = el.querySelectorAll('button')[0];
-      const input = el.querySelector('input');
-      const plus = el.querySelectorAll('button')[1];
+    minus.onclick = () => updateQty(p.id, qty - 1);
+    plus.onclick = () => updateQty(p.id, qty + 1);
+    input.onchange = e => updateQty(p.id, Number(e.target.value));
+    row.querySelector('.remove-btn').onclick = () => {
+      delete cart[id];
+      render();
+    };
 
-      minus.onclick = e => {
-        e.stopPropagation();
-        updateQty(p.id, (cart[p.id] || 0) - 1);
-      };
+    contentEl.appendChild(row);
+  });
 
-      plus.onclick = e => {
-        e.stopPropagation();
-        updateQty(p.id, (cart[p.id] || 0) + 1);
-      };
+  const textarea = document.createElement('textarea');
+  textarea.placeholder = 'Коментар до замовлення (необовʼязково)';
+  textarea.value = comment;
+  textarea.onchange = e => comment = e.target.value;
+  contentEl.appendChild(textarea);
 
-      input.onchange = e => {
-        e.stopPropagation();
-        updateQty(p.id, Number(input.value));
-      };
+  const submit = document.createElement('div');
+  submit.className = 'button';
+  submit.textContent = 'Оформити замовлення';
+  submit.onclick = submitOrder;
+  contentEl.appendChild(submit);
 
-      root.appendChild(el);
-    });
+  const back = document.createElement('div');
+  back.className = 'button back';
+  back.textContent = 'Повернутись до каталогу';
+  back.onclick = () => {
+    screen = 'catalog';
+    render();
+  };
+  contentEl.appendChild(back);
 }
 
-/* =====================
-   PRODUCT SCREEN
-===================== */
+function updateQty(id, qty) {
+  if (qty <= 0) delete cart[id];
+  else cart[id] = qty;
+  render();
+}
 
-function renderProductScreen() {
-  if (screen !== 'product') return;
+function updateFooter() {
+  const count = Object.keys(cart).length;
+  if (count === 0) return;
 
-  const p = products.find(x => x.id == currentProductId);
-  if (!p) return;
-
-  const qty = cart[p.id] || 0;
-
-  document.getElementById('product-content').innerHTML = `
-    <img src="${p.image}" class="product-image" />
-    <h3>${p.name}</h3>
-    <div>${p.weight}</div>
-    <p>${p.description || ''}</p>
-
-    <div class="controls">
-      <button>-</button>
-      <input type="number" min="0" value="${qty}">
-      <button>+</button>
-    </div>
-
-    <button id="back-product">⬅️ Повернутись до каталогу</button>
-  `;
-
-  const buttons = document.querySelectorAll('#product-content .controls button');
-  const input = document.querySelector('#product-content input');
-
-  buttons[0].onclick = () => updateQty(p.id, qty - 1);
-  buttons[1].onclick = () => updateQty(p.id, qty + 1);
-  input.onchange = e => updateQty(p.id, Number(e.target.value));
-
-  document.getElementById('back-product').onclick = () => {
-    screen = 'catalog';
+  footerEl.textContent = `Перейти до замовлення — ${count} позицій`;
+  footerEl.classList.add('show');
+  footerEl.onclick = () => {
+    screen = 'cart';
     render();
   };
 }
 
-/* =====================
-   BOTTOM BUTTON
-===================== */
+function submitOrder() {
+  if (!confirm('Підтвердити замовлення?')) return;
 
-function renderBottomButton() {
-  const btn = document.getElementById('go-cart');
-  const count = cartItemsCount();
-
-  if (screen === 'catalog' && count > 0) {
-    btn.style.display = 'block';
-    btn.innerText = `Перейти до замовлення — ${count} позицій`;
-    btn.onclick = () => {
-      screen = 'cart';
-      render();
-    };
-  } else {
-    btn.style.display = 'none';
-  }
-}
-
-/* =====================
-   CART SCREEN
-===================== */
-
-function renderCartScreen() {
-  if (screen !== 'cart') return;
-
-  const list = document.getElementById('cart-items');
-  list.innerHTML = '';
-
-  Object.entries(cart).forEach(([id, qty]) => {
+  const items = Object.keys(cart).map(id => {
     const p = products.find(x => x.id == id);
-
-    const row = document.createElement('div');
-    row.className = 'cart-row';
-
-    row.innerHTML = `
-      <div class="cart-title">${p.name} (${p.weight})</div>
-
-      <div class="cart-controls">
-        <div class="controls">
-          <button>-</button>
-          <input type="number" min="0" value="${qty}">
-          <button>+</button>
-        </div>
-
-        <button class="remove-btn">Видалити позицію</button>
-      </div>
-    `;
-
-    const minus = row.querySelector('.controls button:nth-child(1)');
-    const plus = row.querySelector('.controls button:nth-child(3)');
-    const input = row.querySelector('.controls input');
-    const removeBtn = row.querySelector('.remove-btn');
-
-    minus.onclick = () => updateQty(id, qty - 1);
-    plus.onclick = () => updateQty(id, qty + 1);
-    input.onchange = e => updateQty(id, Number(e.target.value));
-
-    removeBtn.onclick = () => {
-      delete cart[id];
-      saveCart();
-      render();
+    return {
+      id: p.id,
+      name: p.name,
+      weight: p.weight,
+      qty: cart[id]
     };
-
-    list.appendChild(row);
-  });
-}
-
-/* =====================
-   ACTIONS
-===================== */
-
-document.getElementById('back').onclick = () => {
-  screen = 'catalog';
-  render();
-};
-
-document.getElementById('submit').onclick = () => {
-  if (cartItemsCount() === 0) {
-    alert('Кошик порожній');
-    return;
-  }
-
-  const items = Object.entries(cart).map(([id, qty]) => {
-    const p = products.find(x => x.id == id);
-    return { name: p.name, weight: p.weight, qty };
   });
 
   tg.sendData(JSON.stringify({
-    initData: tg.initData,
-    items
+    items,
+    comment
   }));
+}
 
-  clearCart();
-  tg.close();
-};
+render();
