@@ -9,6 +9,7 @@ const CART_KEY = 'cart';
 const COMMENT_KEY = 'comment';
 
 let cart = {};
+let confirmMode = false;
 
 fetch('./products.json')
   .then(r => r.json())
@@ -20,6 +21,10 @@ fetch('./products.json')
     renderProducts();
     renderCart();
   });
+
+/* =====================
+   Storage
+===================== */
 
 function loadCart() {
   try {
@@ -49,8 +54,15 @@ function clearCart() {
   localStorage.removeItem(COMMENT_KEY);
 }
 
+/* =====================
+   UI
+===================== */
+
 function renderCategories() {
+  if (confirmMode) return;
+
   const root = document.getElementById('categories');
+  root.style.display = 'flex';
   root.innerHTML = '';
 
   categories.forEach(c => {
@@ -70,6 +82,8 @@ function renderProducts() {
   const root = document.getElementById('products');
   root.innerHTML = '';
 
+  if (confirmMode) return;
+
   products
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .forEach(p => {
@@ -85,7 +99,7 @@ function renderProducts() {
           <div class="product-weight">${p.weight}</div>
           <div class="controls">
             <button>-</button>
-            <input type="number" min="0" placeholder="0" value="${qty}">
+            <input type="number" min="0" value="${qty}" placeholder="0">
             <button>+</button>
           </div>
         </div>
@@ -95,33 +109,9 @@ function renderProducts() {
       const input = el.querySelector('input');
       const plus = el.querySelectorAll('button')[1];
 
-      minus.onclick = () => {
-        if (!cart[p.id]) return;
-        cart[p.id]--;
-        if (cart[p.id] <= 0) delete cart[p.id];
-        saveCart();
-        renderProducts();
-        renderCart();
-      };
-
-      plus.onclick = () => {
-        cart[p.id] = (cart[p.id] || 0) + 1;
-        saveCart();
-        renderProducts();
-        renderCart();
-      };
-
-      input.onchange = () => {
-        const value = Number(input.value);
-        if (!value || value <= 0) {
-          delete cart[p.id];
-        } else {
-          cart[p.id] = value;
-        }
-        saveCart();
-        renderProducts();
-        renderCart();
-      };
+      minus.onclick = () => updateQty(p.id, (cart[p.id] || 0) - 1);
+      plus.onclick = () => updateQty(p.id, (cart[p.id] || 0) + 1);
+      input.onchange = () => updateQty(p.id, Number(input.value));
 
       root.appendChild(el);
     });
@@ -129,6 +119,8 @@ function renderProducts() {
 
 function renderCart() {
   const root = document.getElementById('cart-items');
+  root.innerHTML = '';
+
   const items = Object.entries(cart);
 
   if (!items.length) {
@@ -136,18 +128,105 @@ function renderCart() {
     return;
   }
 
-  root.innerHTML = items
-    .map(([id, qty]) => {
-      const p = products.find(x => x.id == id);
-      return `• ${p.name} (${p.weight}) × ${qty}`;
-    })
-    .join('<br>');
+  items.forEach(([id, qty]) => {
+    const p = products.find(x => x.id == id);
+
+    const row = document.createElement('div');
+    row.style.marginBottom = '6px';
+
+    row.innerHTML = `
+      <div><b>${p.name}</b> (${p.weight})</div>
+      <div class="controls">
+        <button>-</button>
+        <input type="number" min="0" value="${qty}">
+        <button>+</button>
+        <button style="background:#d9534f">✕</button>
+      </div>
+    `;
+
+    const buttons = row.querySelectorAll('button');
+    const input = row.querySelector('input');
+
+    buttons[0].onclick = () => updateQty(id, qty - 1);
+    buttons[1].onclick = () => updateQty(id, qty + 1);
+    buttons[2].onclick = () => removeItem(id);
+    input.onchange = () => updateQty(id, Number(input.value));
+
+    root.appendChild(row);
+  });
 }
+
+/* =====================
+   Logic
+===================== */
+
+function updateQty(id, value) {
+  if (!value || value <= 0) {
+    delete cart[id];
+  } else {
+    cart[id] = value;
+  }
+  saveCart();
+  renderProducts();
+  renderCart();
+}
+
+function removeItem(id) {
+  delete cart[id];
+  saveCart();
+  renderProducts();
+  renderCart();
+}
+
+/* =====================
+   Submit & Confirm
+===================== */
 
 document.getElementById('comment').oninput = saveCart;
 
 document.getElementById('submit').onclick = () => {
-  const items = Object.entries(cart).map(([id, qty]) => {
+  const entries = Object.entries(cart);
+  if (!entries.length) {
+    alert('Кошик порожній');
+    return;
+  }
+
+  // 1️⃣ Перехід у режим підтвердження
+  if (!confirmMode) {
+    confirmMode = true;
+
+    document.getElementById('categories').style.display = 'none';
+
+    document.getElementById('products').innerHTML = `
+      <div style="padding:10px">
+        <h3>Підтвердження замовлення</h3>
+        ${entries.map(([id, qty]) => {
+          const p = products.find(x => x.id == id);
+          return `<div>• ${p.name} (${p.weight}) × ${qty}</div>`;
+        }).join('')}
+        ${document.getElementById('comment').value
+          ? `<br><b>Коментар:</b><br>${document.getElementById('comment').value}`
+          : ''}
+        <br><br>
+        <button id="edit" style="width:100%;margin-bottom:8px">⬅️ Редагувати</button>
+      </div>
+    `;
+
+    document.getElementById('submit').innerText = '✅ Підтвердити';
+
+    document.getElementById('edit').onclick = () => {
+      confirmMode = false;
+      document.getElementById('submit').innerText = 'Оформити замовлення';
+      renderCategories();
+      renderProducts();
+      renderCart();
+    };
+
+    return;
+  }
+
+  // 2️⃣ Підтверджено — відправка
+  const payloadItems = entries.map(([id, qty]) => {
     const p = products.find(x => x.id == id);
     return {
       name: p.name,
@@ -156,17 +235,10 @@ document.getElementById('submit').onclick = () => {
     };
   });
 
-  if (!items.length) {
-    alert('Кошик порожній');
-    return;
-  }
-
-  const comment = document.getElementById('comment').value.trim();
-
   tg.sendData(JSON.stringify({
     initData: tg.initData,
-    items,
-    comment
+    items: payloadItems,
+    comment: document.getElementById('comment').value.trim()
   }));
 
   clearCart();
