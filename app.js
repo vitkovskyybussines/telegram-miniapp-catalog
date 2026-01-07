@@ -66,10 +66,6 @@ function render() {
   if (screen === 'cart') renderCart();
 }
 
-/* ======================
-   CATALOG
-====================== */
-
 function renderCatalog() {
   titleEl.textContent = 'Зробити замовлення';
   categoriesEl.innerHTML = '';
@@ -79,10 +75,7 @@ function renderCatalog() {
     const el = document.createElement('div');
     el.className = 'category' + (c === activeCategory ? ' active' : '');
     el.textContent = c;
-    el.onclick = () => {
-      activeCategory = c;
-      render();
-    };
+    el.onclick = () => { activeCategory = c; render(); };
     categoriesEl.appendChild(el);
   });
 
@@ -95,7 +88,6 @@ function renderCatalog() {
 
     const row = document.createElement('div');
     row.className = 'product';
-
     row.innerHTML = `
       <div class="product-row">
         <img src="${p.image}" class="thumb">
@@ -126,31 +118,18 @@ function renderCatalog() {
     contentEl.appendChild(row);
   });
 
-  if (Object.keys(cart).length > 0) {
-    const info = document.createElement('div');
-    info.style.padding = '12px';
-    info.textContent = `Позицій у кошику: ${Object.keys(cart).length}`;
-    contentEl.appendChild(info);
-
+  if (Object.keys(cart).length) {
     const btn = document.createElement('div');
     btn.className = 'button';
-    btn.textContent = 'Перейти до кошика';
-    btn.onclick = () => {
-      screen = 'cart';
-      render();
-    };
+    btn.textContent = `Перейти до замовлення — ${Object.keys(cart).length} позицій`;
+    btn.onclick = () => { screen = 'cart'; render(); };
     contentEl.appendChild(btn);
   }
 }
 
-/* ======================
-   PRODUCT
-====================== */
-
 function renderProduct() {
   const p = currentProduct;
   let qty = cart[p.id] || 0;
-  const alreadyAdded = qty > 0;
 
   titleEl.textContent = p.name;
   contentEl.innerHTML = `
@@ -160,20 +139,13 @@ function renderProduct() {
       <p>${p.description}</p>
       <p><strong>Склад:</strong> ${p.composition}</p>
 
-      <div style="display:flex; gap:10px; align-items:center;">
+      <div class="cart-row">
         <div class="controls">
           <button id="minus">-</button>
           <input id="qty" type="number" value="${qty}">
           <button id="plus">+</button>
         </div>
-
-        <div
-          class="button"
-          id="add"
-          style="flex:1; height:44px; display:flex; align-items:center; justify-content:center;"
-        >
-          ${alreadyAdded ? '✓ Додано' : 'Додати в кошик'}
-        </div>
+        <div class="button" id="add">Додати в кошик</div>
       </div>
 
       <div class="button back" id="back">Повернутись до каталогу</div>
@@ -194,10 +166,13 @@ function renderProduct() {
   };
 
   addBtn.onclick = () => {
-    if (qty > 0) {
-      cart[p.id] = qty;
-      addBtn.textContent = '✓ Додано';
-    }
+    if (qty > 0) cart[p.id] = qty;
+    addBtn.textContent = '✔ Додано';
+    setTimeout(() => {
+      addBtn.textContent = 'Додати в кошик';
+      screen = 'catalog';
+      render();
+    }, 600);
   };
 
   document.getElementById('back').onclick = () => {
@@ -205,10 +180,6 @@ function renderProduct() {
     render();
   };
 }
-
-/* ======================
-   CART
-====================== */
 
 function renderCart() {
   titleEl.textContent = 'Кошик';
@@ -220,11 +191,9 @@ function renderCart() {
 
     const row = document.createElement('div');
     row.className = 'cart-item';
-
     row.innerHTML = `
       <strong>${p.name}</strong><br>
       <small>${p.weight}</small>
-
       <div class="cart-row">
         <div class="controls">
           <button>-</button>
@@ -239,13 +208,15 @@ function renderCart() {
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
-    row.querySelector('.remove-btn').onclick = () => {
-      delete cart[id];
-      render();
-    };
+    row.querySelector('.remove-btn').onclick = () => { delete cart[id]; render(); };
 
     contentEl.appendChild(row);
   });
+
+  const summary = document.createElement('div');
+  summary.className = 'summary';
+  summary.textContent = `📦 Позицій у кошику: ${Object.keys(cart).length}`;
+  contentEl.appendChild(summary);
 
   const textarea = document.createElement('textarea');
   textarea.placeholder = 'Коментар до замовлення (необовʼязково)';
@@ -262,16 +233,9 @@ function renderCart() {
   const back = document.createElement('div');
   back.className = 'button back';
   back.textContent = 'Повернутись до каталогу';
-  back.onclick = () => {
-    screen = 'catalog';
-    render();
-  };
+  back.onclick = () => { screen = 'catalog'; render(); };
   contentEl.appendChild(back);
 }
-
-/* ======================
-   HELPERS
-====================== */
 
 function updateQty(id, qty) {
   if (qty <= 0) delete cart[id];
@@ -284,11 +248,7 @@ function submitOrder() {
 
   const items = Object.keys(cart).map(id => {
     const p = products.find(x => x.id == id);
-    return {
-      name: p.name,
-      weight: p.weight,
-      qty: cart[id]
-    };
+    return { name: p.name, weight: p.weight, qty: cart[id] };
   });
 
   tg.sendData(JSON.stringify({ items, comment }));
