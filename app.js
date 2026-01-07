@@ -5,7 +5,6 @@ const categories = [
   'Вся продукція',
   'Сосиски та сардельки',
   'Варені ковбаси',
-  'Напівкопчені ковбаси',
   'Мʼясні делікатеси'
 ];
 
@@ -15,17 +14,17 @@ const products = [
     name: 'Баварські сардельки',
     weight: '500г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/600x400?text=Сардельки',
-    description: 'Соковиті баварські сардельки з добірного мʼяса.',
-    composition: 'Свинина, спеції'
+    image: 'https://via.placeholder.com/300',
+    description: 'Соковиті сардельки',
+    composition: 'Свинина'
   },
   {
     id: 2,
     name: 'Сосиски молочні',
     weight: '400г',
     category: 'Сосиски та сардельки',
-    image: 'https://via.placeholder.com/600x400?text=Сосиски',
-    description: 'Ніжні молочні сосиски з молоком.',
+    image: 'https://via.placeholder.com/300',
+    description: 'Ніжні молочні сосиски',
     composition: 'Свинина, молоко'
   },
   {
@@ -33,8 +32,8 @@ const products = [
     name: 'Докторська',
     weight: '700г',
     category: 'Варені ковбаси',
-    image: 'https://via.placeholder.com/600x400?text=Докторська',
-    description: 'Класична варена ковбаса.',
+    image: 'https://via.placeholder.com/300',
+    description: 'Класична варена ковбаса',
     composition: 'Свинина'
   },
   {
@@ -42,8 +41,8 @@ const products = [
     name: 'Бекон',
     weight: '100г',
     category: 'Мʼясні делікатеси',
-    image: 'https://via.placeholder.com/600x400?text=Бекон',
-    description: 'Ароматний копчений бекон.',
+    image: 'https://via.placeholder.com/300',
+    description: 'Ароматний бекон',
     composition: 'Свинина'
   }
 ];
@@ -56,13 +55,11 @@ let comment = '';
 
 const categoriesEl = document.getElementById('categories');
 const contentEl = document.getElementById('content');
-const footerEl = document.getElementById('footer');
 const titleEl = document.getElementById('title');
 
 function render() {
   categoriesEl.style.display = screen === 'catalog' ? 'flex' : 'none';
-  footerEl.classList.remove('show');
-  contentEl.innerHTML = '';
+  contentEl.className = 'fade';
 
   if (screen === 'catalog') renderCatalog();
   if (screen === 'product') renderProduct();
@@ -72,6 +69,7 @@ function render() {
 function renderCatalog() {
   titleEl.textContent = 'Зробити замовлення';
   categoriesEl.innerHTML = '';
+  contentEl.innerHTML = '';
 
   categories.forEach(c => {
     const el = document.createElement('div');
@@ -91,40 +89,49 @@ function renderCatalog() {
   list.forEach(p => {
     const qty = cart[p.id] || 0;
 
-    const card = document.createElement('div');
-    card.className = 'product';
+    const row = document.createElement('div');
+    row.className = 'product';
 
-    card.innerHTML = `
-      <img src="${p.image}">
-      <div class="product-body">
-        <strong>${p.name}</strong>
-        <small>${p.weight}</small>
-
+    row.innerHTML = `
+      <div class="product-row">
+        <img src="${p.image}" class="thumb">
+        <div class="product-info">
+          <strong>${p.name}</strong><br>
+          <small>${p.weight}</small>
+        </div>
         <div class="controls">
           <button>-</button>
-          <input type="number" min="0" value="${qty}">
+          <input type="number" value="${qty}">
           <button>+</button>
         </div>
       </div>
     `;
 
-    card.querySelector('img').onclick =
-    card.querySelector('strong').onclick = () => {
+    row.querySelector('.thumb').onclick =
+    row.querySelector('.product-info').onclick = () => {
       currentProduct = p;
       screen = 'product';
       render();
     };
 
-    const [minus, input, plus] = card.querySelectorAll('.controls button, .controls input');
-
+    const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
 
-    contentEl.appendChild(card);
+    contentEl.appendChild(row);
   });
 
-  updateFooter();
+  if (Object.keys(cart).length > 0) {
+    const btn = document.createElement('div');
+    btn.className = 'button';
+    btn.textContent = `Перейти до замовлення — ${Object.keys(cart).length} позицій`;
+    btn.onclick = () => {
+      screen = 'cart';
+      render();
+    };
+    contentEl.appendChild(btn);
+  }
 }
 
 function renderProduct() {
@@ -132,13 +139,12 @@ function renderProduct() {
   let qty = cart[p.id] || 0;
 
   titleEl.textContent = p.name;
-
   contentEl.innerHTML = `
-    <div class="product-page">
-      <img src="${p.image}">
-      <div class="muted">${p.weight}</div>
+    <div class="product">
+      <img src="${p.image}" style="width:100%;border-radius:12px">
+      <h3>${p.name}</h3>
       <p>${p.description}</p>
-      <p class="muted"><strong>Склад:</strong> ${p.composition}</p>
+      <p><strong>Склад:</strong> ${p.composition}</p>
 
       <div class="controls">
         <button id="minus">-</button>
@@ -190,21 +196,20 @@ function renderCart() {
       <strong>${p.name}</strong><br>
       <small>${p.weight}</small>
 
-      <div class="controls">
-        <button>-</button>
-        <input type="number" value="${qty}">
-        <button>+</button>
+      <div class="cart-row">
+        <div class="controls">
+          <button>-</button>
+          <input type="number" value="${qty}">
+          <button>+</button>
+        </div>
+        <button class="remove-btn">Видалити позицію</button>
       </div>
-
-      <button class="remove-btn">Видалити позицію</button>
     `;
 
     const [minus, input, plus] = row.querySelectorAll('.controls button, .controls input');
-
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
-
     row.querySelector('.remove-btn').onclick = () => {
       delete cart[id];
       render();
@@ -241,18 +246,6 @@ function updateQty(id, qty) {
   render();
 }
 
-function updateFooter() {
-  const count = Object.keys(cart).length;
-  if (!count) return;
-
-  footerEl.textContent = `Перейти до замовлення — ${count} позицій`;
-  footerEl.classList.add('show');
-  footerEl.onclick = () => {
-    screen = 'cart';
-    render();
-  };
-}
-
 function submitOrder() {
   if (!confirm('Підтвердити замовлення?')) return;
 
@@ -267,7 +260,3 @@ function submitOrder() {
 
   tg.sendData(JSON.stringify({ items, comment }));
   cart = {};
-  tg.close();
-}
-
-render();
