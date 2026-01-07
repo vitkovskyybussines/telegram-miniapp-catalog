@@ -167,7 +167,7 @@ function renderProduct() {
 
   addBtn.onclick = () => {
     if (qty > 0) cart[p.id] = qty;
-    addBtn.textContent = '✔ Додано';
+    addBtn.textContent = 'Додано';
     setTimeout(() => {
       addBtn.textContent = 'Додати в кошик';
       screen = 'catalog';
