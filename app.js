@@ -215,7 +215,7 @@ function renderCart() {
 
   const summary = document.createElement('div');
   summary.className = 'summary';
-  summary.textContent = `📦 Позицій у кошику: ${Object.keys(cart).length}`;
+  summary.textContent = ` Позицій у кошику: ${Object.keys(cart).length}`;
   contentEl.appendChild(summary);
 
   const textarea = document.createElement('textarea');
