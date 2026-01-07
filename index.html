@@ -84,6 +84,12 @@
       color: #fff;
       font-size: 18px;
       cursor: pointer;
+      transition: transform .1s ease, filter .1s ease;
+    }
+
+    .controls button:active {
+      transform: scale(0.95);
+      filter: brightness(0.9);
     }
 
     .controls input {
@@ -123,6 +129,11 @@
       border-radius: 10px;
       cursor: pointer;
       font-size: 16px;
+      transition: filter .15s ease;
+    }
+
+    .button:active {
+      filter: brightness(0.9);
     }
 
     .back {
@@ -130,47 +141,25 @@
       color: #000;
     }
 
+    .summary {
+      padding: 12px;
+      font-size: 14px;
+      color: #555;
+    }
+
     .fade {
-      animation: fade 0.2s ease;
+      animation: fade .2s ease;
     }
 
     @keyframes fade {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* ====== ДОДАНО (ТІЛЬКИ ЦЕ) ====== */
-
-    .cart-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .cart-row .remove-btn {
-      margin-left: auto;
-    }
-
-    .action-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .action-row .controls {
-      flex-shrink: 0;
-    }
-
-    .action-row .button {
-      flex: 1;
-      margin: 0;
+      from { opacity: 0 }
+      to { opacity: 1 }
     }
   </style>
 </head>
 
 <body>
   <h1 id="title">Зробити замовлення</h1>
-
   <div id="categories" class="categories"></div>
   <div id="content"></div>
 
