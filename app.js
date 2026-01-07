@@ -75,10 +75,7 @@ function renderCatalog() {
     const el = document.createElement('div');
     el.className = 'category' + (c === activeCategory ? ' active' : '');
     el.textContent = c;
-    el.onclick = () => {
-      activeCategory = c;
-      render();
-    };
+    el.onclick = () => { activeCategory = c; render(); };
     categoriesEl.appendChild(el);
   });
 
@@ -91,7 +88,6 @@ function renderCatalog() {
 
     const row = document.createElement('div');
     row.className = 'product';
-
     row.innerHTML = `
       <div class="product-row">
         <img src="${p.image}" class="thumb">
@@ -122,19 +118,15 @@ function renderCatalog() {
     contentEl.appendChild(row);
   });
 
-  if (Object.keys(cart).length > 0) {
+  if (Object.keys(cart).length) {
     const btn = document.createElement('div');
     btn.className = 'button';
     btn.textContent = `Перейти до замовлення — ${Object.keys(cart).length} позицій`;
-    btn.onclick = () => {
-      screen = 'cart';
-      render();
-    };
+    btn.onclick = () => { screen = 'cart'; render(); };
     contentEl.appendChild(btn);
   }
 }
 
-/* ====== ТУТ ЄДИНА ПРАВКА ====== */
 function renderProduct() {
   const p = currentProduct;
   let qty = cart[p.id] || 0;
@@ -147,7 +139,7 @@ function renderProduct() {
       <p>${p.description}</p>
       <p><strong>Склад:</strong> ${p.composition}</p>
 
-      <div class="action-row">
+      <div class="cart-row">
         <div class="controls">
           <button id="minus">-</button>
           <input id="qty" type="number" value="${qty}">
@@ -161,6 +153,7 @@ function renderProduct() {
   `;
 
   const qtyInput = document.getElementById('qty');
+  const addBtn = document.getElementById('add');
 
   document.getElementById('minus').onclick = () => {
     qty = Math.max(0, qty - 1);
@@ -172,10 +165,14 @@ function renderProduct() {
     qtyInput.value = qty;
   };
 
-  document.getElementById('add').onclick = () => {
+  addBtn.onclick = () => {
     if (qty > 0) cart[p.id] = qty;
-    screen = 'catalog';
-    render();
+    addBtn.textContent = '✔ Додано';
+    setTimeout(() => {
+      addBtn.textContent = 'Додати в кошик';
+      screen = 'catalog';
+      render();
+    }, 600);
   };
 
   document.getElementById('back').onclick = () => {
@@ -183,7 +180,6 @@ function renderProduct() {
     render();
   };
 }
-/* ====== КІНЕЦЬ ПРАВКИ ====== */
 
 function renderCart() {
   titleEl.textContent = 'Кошик';
@@ -195,11 +191,9 @@ function renderCart() {
 
     const row = document.createElement('div');
     row.className = 'cart-item';
-
     row.innerHTML = `
       <strong>${p.name}</strong><br>
       <small>${p.weight}</small>
-
       <div class="cart-row">
         <div class="controls">
           <button>-</button>
@@ -214,13 +208,15 @@ function renderCart() {
     minus.onclick = () => updateQty(p.id, qty - 1);
     plus.onclick = () => updateQty(p.id, qty + 1);
     input.onchange = e => updateQty(p.id, Number(e.target.value));
-    row.querySelector('.remove-btn').onclick = () => {
-      delete cart[id];
-      render();
-    };
+    row.querySelector('.remove-btn').onclick = () => { delete cart[id]; render(); };
 
     contentEl.appendChild(row);
   });
+
+  const summary = document.createElement('div');
+  summary.className = 'summary';
+  summary.textContent = `📦 Позицій у кошику: ${Object.keys(cart).length}`;
+  contentEl.appendChild(summary);
 
   const textarea = document.createElement('textarea');
   textarea.placeholder = 'Коментар до замовлення (необовʼязково)';
@@ -237,10 +233,7 @@ function renderCart() {
   const back = document.createElement('div');
   back.className = 'button back';
   back.textContent = 'Повернутись до каталогу';
-  back.onclick = () => {
-    screen = 'catalog';
-    render();
-  };
+  back.onclick = () => { screen = 'catalog'; render(); };
   contentEl.appendChild(back);
 }
 
@@ -255,11 +248,7 @@ function submitOrder() {
 
   const items = Object.keys(cart).map(id => {
     const p = products.find(x => x.id == id);
-    return {
-      name: p.name,
-      weight: p.weight,
-      qty: cart[id]
-    };
+    return { name: p.name, weight: p.weight, qty: cart[id] };
   });
 
   tg.sendData(JSON.stringify({ items, comment }));
