@@ -134,6 +134,7 @@ function renderCatalog() {
   }
 }
 
+/* ====== ТУТ ЄДИНА ПРАВКА ====== */
 function renderProduct() {
   const p = currentProduct;
   let qty = cart[p.id] || 0;
@@ -146,13 +147,15 @@ function renderProduct() {
       <p>${p.description}</p>
       <p><strong>Склад:</strong> ${p.composition}</p>
 
-      <div class="controls">
-        <button id="minus">-</button>
-        <input id="qty" type="number" value="${qty}">
-        <button id="plus">+</button>
+      <div class="action-row">
+        <div class="controls">
+          <button id="minus">-</button>
+          <input id="qty" type="number" value="${qty}">
+          <button id="plus">+</button>
+        </div>
+        <div class="button" id="add">Додати в кошик</div>
       </div>
 
-      <div class="button" id="add">Додати в кошик</div>
       <div class="button back" id="back">Повернутись до каталогу</div>
     </div>
   `;
@@ -180,6 +183,7 @@ function renderProduct() {
     render();
   };
 }
+/* ====== КІНЕЦЬ ПРАВКИ ====== */
 
 function renderCart() {
   titleEl.textContent = 'Кошик';
