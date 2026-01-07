@@ -260,3 +260,7 @@ function submitOrder() {
 
   tg.sendData(JSON.stringify({ items, comment }));
   cart = {};
+  tg.close();
+}
+
+render();
